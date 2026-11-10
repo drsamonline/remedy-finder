@@ -23,6 +23,19 @@
     return this._freq;
   };
 
+  const RB = () => H.DB.rubric || {};
+  U.rubricFor = function (sid) { return RB()[sid] || null; };
+
+  let _remIdx = null;
+  U.remedyIndex = function () {
+    if (_remIdx) return _remIdx;
+    _remIdx = Object.entries(H.DB.remedies).map(([code, r]) => ({
+      code, r,
+      hay: (r.name + ' ' + r.latin + ' ' + (r.clinicals || []).join(' ') + ' ' + (r.family || '')).toLowerCase()
+    }));
+    return _remIdx;
+  };
+
   const PACKICON = {
     fever: '<svg class="i i-lg"><use href="#i-graph"/></svg>',
     cough: '<svg class="i i-lg"><use href="#i-study"/></svg>',
@@ -60,6 +73,18 @@
     const cats = this.s.cat ? H.DB.cats.filter(c => c.k === this.s.cat) : H.DB.cats;
     const freq = this.freq();
     let html = '';
+    if (q.length >= 2) {
+      const hits = this.remedyIndex().filter(x => x.hay.includes(q)).slice(0, 8);
+      if (hits.length) {
+        html += `<div class="ss open" data-cat="__rem">
+          <button class="sh" aria-expanded="true" type="button"><span>Remedies</span><span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+          <div class="sl">${hits.map(x => `<div class="sc rem" data-rem="${x.code}" role="button" tabindex="0">
+            <span class="kd">${x.r.group.charAt(0).toUpperCase()}</span>
+            <span>${this.hl(esc(x.r.name), q)}<em class="lt">${esc(x.r.latin)}</em></span>
+            <span class="n">${(x.r.sources || []).length || ''}</span>
+          </div>`).join('')}</div></div>`;
+      }
+    }
     cats.forEach(cat => {
       const syms = Object.values(S).filter(s => s.cat === cat.k &&
         (!q || s.name.toLowerCase().includes(q) || s.synonyms.some(sy => sy.toLowerCase().includes(q))));
@@ -72,7 +97,9 @@
         <div class="sl">${syms.map(s => {
           const on = this.s.sel.has(s.id);
           const n = freq.get(s.id) || 0;
-          return `<div class="sc ${on ? 'sel' : ''}" data-sid="${s.id}" role="checkbox" aria-checked="${on}" tabindex="0">
+          const rb = this.rubricFor(s.id);
+          const tip = rb ? `Repertorium: ${rb[0]} — ${rb[1]} rubrics` : 'Curated link (no single rubric)';
+          return `<div class="sc ${on ? 'sel' : ''}" data-sid="${s.id}" role="checkbox" aria-checked="${on}" tabindex="0" title="${esc(tip)}">
             <input type="checkbox" ${on ? 'checked' : ''} tabindex="-1" aria-hidden="true">
             <span>${q ? this.hl(esc(s.name), q) : esc(s.name)}</span>
             <span class="n ${n && n <= 12 ? 'rare' : ''}" title="${n} remedies carry this symptom">${n}</span>
@@ -102,6 +129,14 @@
     }).join('');
   };
 
+  /* ---------- pins (watch list) ---------- */
+  U.pins = new Set();
+  U.togglePin = function (code) {
+    if (this.pins.has(code)) this.pins.delete(code);
+    else { if (this.pins.size >= 3) { this.toast('Pin up to three remedies'); return; } this.pins.add(code); }
+    if (this.s.last) this.rr();
+  };
+
   /* ---------- results ---------- */
   U.rr = async function () {
     const v = $('rv');
@@ -120,6 +155,14 @@
       return;
     }
     const top = res[0].matchScore;
+    const rankOf = c => { const i = res.findIndex(x => x.code === c); return i < 0 ? '—' : '#' + (i + 1); };
+    const pinned = [...this.pins].filter(c => H.DB.remedies[c]);
+    const pinStrip = pinned.length ? `<div class="pinbar">${pinned.map(c => {
+      const s = H.Sc.sc(c, [...this.s.sel], this.s.mode) || { matchScore: 0, matchCount: 0 };
+      const r = H.DB.remedies[c];
+      return `<div class="pin"><div><strong>${esc(r.name)}</strong><span>${rankOf(c)} · ${s.matchScore} pts · ${s.matchCount}/${this.s.sel.size}</span></div>
+        <button data-unpin="${c}" aria-label="Unpin ${esc(r.name)}">✕</button></div>`;
+    }).join('')}</div>` : '';
     v.innerHTML = `<div class="rh">
         <div><div class="rt">${H.I.t('edu')}</div>
           <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms · ${this.s.mode} mode</div></div>
@@ -131,6 +174,7 @@
           <button class="btn bg" id="b-bk">${ic("back","i-sm")} Symptoms</button>
         </div></div>
       ${strip}
+      ${pinStrip}
       <div class="disc"><strong>${H.I.t('ro')}</strong> ${H.I.t('rot')} Grade‑3 links are marked ★.</div>
       ${res.slice(0, 25).map((r, i) => {
         const rm = H.DB.remedies[r.code];
@@ -161,6 +205,7 @@
             <button class="btn bg" data-cm="${r.code}">${ic("compare","i-sm")} Compare</button>
             <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} Graph</button>
             <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} Study</button>
+            <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="Pin to watch while you change symptoms">${this.pins.has(r.code) ? 'Pinned' : 'Pin'}</button>
             ${this.s.mode === 'teaching' ? `<button class="btn bg" data-ty="${r.code}">Why?</button>` : ''}
           </div></article>`;
       }).join('')}`;
@@ -200,6 +245,8 @@
       H.SRS.add(e.currentTarget.dataset.sr); this.toast(H.I.t('add'));
     }));
     v.querySelectorAll('[data-ty]').forEach(b => b.addEventListener('click', e => this.showTy(e.currentTarget.dataset.ty)));
+    v.querySelectorAll('[data-pin]').forEach(b => b.addEventListener('click', e => this.togglePin(e.currentTarget.dataset.pin)));
+    v.querySelectorAll('[data-unpin]').forEach(b => b.addEventListener('click', e => this.togglePin(e.currentTarget.dataset.unpin)));
   };
 
   U.exportSheet = function () {
@@ -318,6 +365,8 @@
         h.setAttribute('aria-expanded', box.classList.contains('open'));
         return;
       }
+      const rem = e.target.closest('[data-rem]');
+      if (rem) { this.showDetail(rem.dataset.rem); return; }
       const row = e.target.closest('.sc'); if (!row) return;
       const id = parseInt(row.dataset.sid, 10);
       const inp = row.querySelector('input');
@@ -329,7 +378,7 @@
       this.rt();
     });
     $('symptoms').addEventListener('keydown', e => {
-      if ((e.key === ' ' || e.key === 'Enter') && e.target.classList.contains('sc')) {
+      if ((e.key === ' ' || e.key === 'Enter') && (e.target.classList.contains('sc'))) {
         e.preventDefault(); e.target.click();
       }
     });
@@ -353,6 +402,49 @@
     on('b-ca', () => this.showCa());
     on('b-kb', () => H.KB.show());
     on('b-th2', () => this.toggleTheme());
+  };
+
+  /* ---------- remedy detail: repertory provenance + print ---------- */
+  const baseDetail = U.showDetail;
+  U.showDetail = function (code) {
+    baseDetail.call(this, code);
+    const r = H.DB.remedies[code];
+    if (!r) return;
+    const mbd = document.querySelector('#md .mbd');
+    if (mbd) {
+      const S = H.DB.symptoms;
+      const rows = (r.keynotes || []).map(id => [id, this.rubricFor(id)]).filter(x => x[1]).slice(0, 6);
+      if (rows.length) {
+        const sec = document.createElement('div');
+        sec.className = 'msec';
+        sec.innerHTML = `<h4>Repertory rubric behind each keynote</h4>` +
+          rows.map(([id, v]) => `<p class="rb"><span class="rbp">${esc(v[0])}</span><span class="rbn">${esc(S[id] ? S[id].name : '')} · ${v[1]} rubric${v[1]===1?'':'s'} matched</span></p>`).join('');
+        const secs = mbd.querySelectorAll('.msec');
+        const anchor = secs[2] || null;
+        if (anchor) mbd.insertBefore(sec, anchor); else mbd.appendChild(sec);
+      }
+    }
+    const hdr = document.querySelector('#md .mh');
+    if (hdr && !hdr.querySelector('[data-print-one]')) {
+      const b = document.createElement('button');
+      b.className = 'btn bg btn-sm';
+      b.dataset.printOne = code;
+      b.textContent = 'Print';
+      b.style.marginLeft = 'auto';
+      b.onclick = () => this.printOne(code);
+      hdr.insertBefore(b, hdr.lastElementChild);
+    }
+  };
+
+  U.printOne = function (code) {
+    const r = H.DB.remedies[code];
+    if (!r) return;
+    document.body.classList.add('print-one');
+    const t = document.title;
+    document.title = `${r.name} — Remedy Finder`;
+    const done = () => { document.body.classList.remove('print-one'); document.title = t; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    setTimeout(() => window.print(), 90);
   };
 
   /* ---------- theme hook ---------- */

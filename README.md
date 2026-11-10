@@ -5,7 +5,7 @@
 **An offline homeopathic repertory workbench — not another symptom search box.**
 
 [![Live app](https://img.shields.io/badge/live%20app-drsamonline.github.io%2Fremedy--finder-0f766e?style=flat-square)](https://drsamonline.github.io/remedy-finder/)
-[![Single file](https://img.shields.io/badge/single%20file-517%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
+[![Single file](https://img.shields.io/badge/single%20file-550%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
 [![No dependencies](https://img.shields.io/badge/dependencies-0-2f6b3d?style=flat-square)](#architecture)
 [![Offline](https://img.shields.io/badge/offline-first-f6f4ef?style=flat-square)](#offline-and-install)
 [![Remedies](https://img.shields.io/badge/remedies-178-1a1a17?style=flat-square)](#the-data)
@@ -34,10 +34,13 @@ Most remedy finders are a search box over a list. A repertory is not a list — 
 | | |
 |---|---|
 | **Repertorise** | 634 symptoms in 17 chapters, 5 quick packs, typo-tolerant search, live ranking in a Web Worker |
+| **Remedy search** | The search box also finds remedies by name, Latin name, clinical use and family — one click opens the monograph |
+| **Pin & watch** | Pin up to three remedies and change the symptoms around them; the pinned strip keeps showing each remedy’s live rank and score |
+| **Rubric provenance** | Hover any symptom for the repertory rubric behind it; every monograph lists the rubric behind each keynote (`Mind > fear > death · 26 rubrics`) |
 | **Grade-weighted scoring** | Chapter weights × rarity (inverse frequency) × keynote bonus × grade 1–3 × acute/constitutional mode |
 | **Materia medica** | 178 remedy monographs: description, quoted source text, keynotes, mentals, generals, modalities, particulars, clinical uses, relationships, botanical/mineral family |
 | **Cases** | Save a repertorisation as a case, add dated follow-ups with remedy and potency, status and tags, search and sort, 30-day stale flag |
-| **Exports** | Markdown report, CSV, cases JSON, Anki deck (TSV), print stylesheet |
+| **Exports** | Markdown report, CSV, cases JSON, Anki deck (TSV), print stylesheet, single-remedy monograph print |
 | **Study** | Spaced repetition (SM-2) from any remedy, streak, month calendar, quizzes: guess-the-remedy, differentiation, keynotes, case, narration |
 | **Analysis** | Comparison matrix (up to 10 remedies), shared/unique comparison, relationship graph, family explorer, potency helper |
 | **Data audit** | Built-in integrity panel: broken references, duplicate names, orphan symptoms, contradictory modalities, unverified sources — and it reports them instead of hiding them |
@@ -72,7 +75,7 @@ Full provenance: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 | Route | How |
 |---|---|
-| **Single file** | Download [`dist/remedy-finder.html`](dist/remedy-finder.html) (517 KB), double-click. No server, no install, works from a USB stick. |
+| **Single file** | Download [`dist/remedy-finder.html`](dist/remedy-finder.html) (550 KB), double-click. No server, no install, works from a USB stick. |
 | **PWA** | Open the [live app](https://drsamonline.github.io/remedy-finder/) and use *Install* / *Add to Home Screen*. A service worker caches everything; it then works with the network off. |
 | **Windows** | Tagged releases attach a portable launcher produced by CI ([`build-exe.yml`](.github/workflows/build-exe.yml)). |
 | **Android** | Install the PWA (above), or wrap the live URL into an APK with PWABuilder — see [docs/PACKAGING.md](docs/PACKAGING.md). |

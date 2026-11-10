@@ -420,6 +420,32 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
   .sc2{min-width:64px}
 }
 
+
+/* ---------------- pins, remedy rows, rubric provenance ---------------- */
+.pinbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.pin{display:flex;align-items:center;gap:10px;background:var(--gold-soft);border:1px solid color-mix(in srgb,var(--gold) 28%,transparent);
+ border-radius:11px;padding:7px 10px;min-width:0}
+.pin strong{display:block;font-size:12.5px;color:var(--gold);letter-spacing:-.01em}
+.pin span{display:block;font-size:10.5px;color:var(--gold);opacity:.85;font-variant-numeric:tabular-nums}
+.pin button{color:var(--gold);font-size:13px;padding:2px 5px;border-radius:50%}
+.pin button:hover{background:color-mix(in srgb,var(--gold) 15%,transparent)}
+.btn.on{background:var(--gold-soft);border-color:color-mix(in srgb,var(--gold) 35%,transparent);color:var(--gold)}
+.sc.rem .kd{width:19px;height:19px;flex:0 0 19px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
+ display:grid;place-items:center;font-size:10px;font-weight:750;text-transform:uppercase}
+.sc.rem .lt{display:block;font-size:11px;color:var(--ink-2);font-style:italic}
+.sc.rem span:nth-child(2){line-height:1.25}
+.rb{margin:0 0 7px!important;padding:7px 10px;background:var(--surface-2);border-radius:8px}
+.rb .rbp{display:block;font-size:12px;font-weight:600;color:var(--ink);line-height:1.4}
+.rb .rbn{display:block;font-size:10.5px;color:var(--ink-3);margin-top:2px}
+@media print{
+  body.print-one .shell,body.print-one .tabbar,body.print-one .toast,body.print-one .ph{display:none!important}
+  body.print-one .mb{position:static;display:block;background:none;padding:0;backdrop-filter:none}
+  body.print-one .md{box-shadow:none;max-height:none;border-radius:0;max-width:100%;overflow:visible}
+  body.print-one .md .mh .ib,body.print-one .md .mh [data-print-one]{display:none}
+  body.print-one .md .mh{position:static}
+  .pinbar{display:none}
+}
+
 /* ---------------- print ---------------- */
 .ph{display:none}
 @media print{

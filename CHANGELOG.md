@@ -1,5 +1,25 @@
 # Changelog
 
+## 13.1.0 — 2026-11-11
+
+Four enhancements from the backlog, no new dependencies.
+
+### Added
+- **Rubric provenance.** 567 symptoms now carry the repertory rubric they were mapped
+  from (`Mind > fear > death`, `Chill > warmth > amel.`). It appears as a tooltip on
+  every symptom row and as a "Repertory rubric behind each keynote" section in every
+  monograph, with the number of rubrics matched.
+- **Pin & watch.** Pin up to three remedies; a strip above the results keeps their live
+  rank, score and matched count while you change symptoms.
+- **Remedy search.** The search box now also matches remedy names, Latin names,
+  clinical uses and families; a "Remedies" group appears above the symptom chapters.
+- **Print a single monograph.** A Print button in the remedy sheet prints just that
+  remedy — description, quoted source text, rubrics, keynotes, mentals, generals,
+  modalities — without the app chrome.
+
+### Changed
+- Data file grows 517 KB → 550 KB (the rubric map).
+
 ## 13.0.0 — 2026-11-11
 
 Interface rebuilt as a workbench; every function verified in headless Chromium.
