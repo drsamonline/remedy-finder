@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0f766e"/>
+<meta name="author" content="Dr Sohil Momin"/>
+<meta name="description" content="Offline repertory and materia medica workbench: 178 remedies, 634 symptoms, 30,412 graded links from Repertorium Publicum (2008). Educational use only."/>
+<title>Remedy Finder — Homeopathic Repertory Workbench</title>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="assets/app.css"/>
+</head>
+<body data-theme="light">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-find" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-cases" viewBox="0 0 24 24"><path d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></symbol>
+  <symbol id="i-study" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5z"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 21l-2 1-8.4-8.4"/><path d="M9.6 12.6a4 4 0 1 1-5.2-5.2"/><path d="M4 20l4-4"/></symbol>
+  <symbol id="i-results" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M8 3v6h7"/><path d="M8 21v-6h8v6"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 3v11"/><path d="M8 7l4-4 4 4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V3h10v5"/><rect x="4" y="8" width="16" height="8" rx="2"/><path d="M7 16h10v5H7z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></symbol>
+  <symbol id="i-graph" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M10 15l-3.5 2M14 15l3.5 2"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 4l2.4 5.2 5.6.7-4.2 3.9 1.1 5.6L12 16.6 7.1 19.4l1.1-5.6L4 9.9l5.6-.7z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+<a href="#search" class="skip">Skip to symptom search</a>
+<div aria-live="polite" aria-atomic="true" class="sr" id="ann"></div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Primary">
+    <a class="rail-mark" href="index.html" aria-label="Remedy Finder home">✦</a>
+    <button class="rail-btn" data-view="find" aria-current="page"><svg class="i i-lg"><use href="#i-find"/></svg><em>Find</em></button>
+    <button class="rail-btn" data-view="cases"><svg class="i i-lg"><use href="#i-cases"/></svg><em>Cases</em></button>
+    <button class="rail-btn" data-view="study"><svg class="i i-lg"><use href="#i-study"/></svg><em>Study</em></button>
+    <button class="rail-btn" data-view="tools"><svg class="i i-lg"><use href="#i-tools"/></svg><em>Tools</em></button>
+    <div class="rail-spacer"></div>
+    <button class="rail-btn" id="b-th" aria-label="Toggle theme"><svg class="i i-lg" data-theme-icon><use href="#i-moon"/></svg><em>Theme</em></button>
+    <button class="rail-btn" id="b-about" aria-label="About"><svg class="i i-lg"><use href="#i-info"/></svg><em>About</em></button>
+  </nav>
+
+  <div class="main">
+    <header class="topbar" role="banner">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">✦</div>
+        <div>
+          <div class="btitle">Remedy Finder</div>
+          <div class="bsub">Repertory workbench · v13</div>
+        </div>
+      </div>
+      <label class="casebar">
+        <span class="sr">Case name</span>
+        <input id="case-name" placeholder="Untitled case" autocomplete="off"/>
+      </label>
+      <div class="seg" role="tablist" aria-label="Mode">
+        <button class="tab" role="tab" aria-selected="true" data-mode="acute">Acute</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="constitutional">Constitutional</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="teaching">Teaching</button>
+      </div>
+      <div class="topact">
+        <button class="ib" data-view="tools" aria-label="Tools" title="Tools"><svg class="i"><use href="#i-tools"/></svg></button>
+      </div>
+    </header>
+
+    <div id="mig-slot"></div>
+
+    <div class="workspace">
+      <section class="picker" aria-label="Symptom picker">
+        <div class="searchrow">
+          <div class="sw">
+            <svg class="i sic" aria-hidden="true"><use href="#i-find"/></svg>
+            <input type="search" class="si" id="search" placeholder="Search symptoms — typo tolerant" aria-label="Search symptoms" autocomplete="off"/>
+            <button class="sx" id="sc" aria-label="Clear search" style="display:none">✕</button>
+          </div>
+        </div>
+        <div class="cats" id="cat-row" role="group" aria-label="Filter by chapter"></div>
+        <div class="packs" id="packs" aria-label="Symptom packs"></div>
+        <main class="symptoms" id="symptoms" role="region" aria-label="Symptoms" tabindex="-1"></main>
+        <div class="dock">
+          <div class="tray" id="tray" style="display:none">
+            <span class="trc" id="trc">0 selected</span>
+            <div class="trch" id="trch"></div>
+            <button class="btn bp" id="b-find">Repertorise</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="results" id="rv" aria-label="Repertorisation results" aria-live="polite">
+        <div class="rh"><div><div class="rt">Start a case</div><div class="rs">Pick the symptoms that are characteristic, not the ones every remedy has</div></div></div>
+        <div class="disc"><strong>How to read this.</strong> The number beside a symptom is how many of the 178 remedies carry it — rare symptoms discriminate most. ★ marks a grade‑3 (characteristic) link in the repertory.</div>
+        <div class="stats-grid" style="margin-top:14px">
+          <div class="stat-card"><div class="stat-num">178</div><div class="stat-label">Remedies</div></div>
+          <div class="stat-card"><div class="stat-num">634</div><div class="stat-label">Symptoms</div></div>
+          <div class="stat-card"><div class="stat-num">30.4k</div><div class="stat-label">Graded links</div></div>
+          <div class="stat-card"><div class="stat-num">2008</div><div class="stat-label">Repertorium Publicum</div></div>
+        </div>
+        <div class="msec" style="margin-top:18px"><h4>Quick starts</h4>
+          <p class="srcl">Load a pack on the left (Fever, Cough, Headache, Anxiety, Digestive), or open <strong>Tools → Remedy explorer</strong> to browse by kingdom and family.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<nav class="tabbar" aria-label="Sections">
+  <button data-view="find" aria-current="page"><svg class="i"><use href="#i-find"/></svg>Find</button>
+  <button data-view="results"><svg class="i"><use href="#i-results"/></svg>Results</button>
+  <button data-view="cases"><svg class="i"><use href="#i-cases"/></svg>Cases</button>
+  <button data-view="study"><svg class="i"><use href="#i-study"/></svg>Study</button>
+  <button data-view="tools"><svg class="i"><use href="#i-tools"/></svg>More</button>
+</nav>
+
+<div class="mb" id="mb" role="dialog" aria-modal="true" aria-hidden="true"><div class="md" id="md"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="ph"><h1>Remedy Finder — case summary</h1><p id="pd"></p></div>
+
+<div class="xo" id="xo">
+  <div class="xt">
+    <button class="btn bg" id="x-cl">✕ Close</button>
+    <input type="search" id="x-se" placeholder="Search remedy…" aria-label="Search remedy"/>
+    <select id="x-gr" aria-label="Kingdom filter">
+      <option value="">All kingdoms</option><option value="plant">Plant</option><option value="mineral">Mineral</option>
+      <option value="animal">Animal</option><option value="nosode">Nosode</option><option value="metal">Metal</option>
+    </select>
+    <button class="btn bg" id="x-zi" aria-label="Zoom in">+</button>
+    <button class="btn bg" id="x-zo" aria-label="Zoom out">−</button>
+    <button class="btn bg" id="x-re">Reset</button>
+    <span id="x-in" style="font-size:11px;color:var(--ink-2)">Scroll to zoom · drag to pan · click a node</span>
+  </div>
+  <div class="xc" id="x-ca"></div>
+</div>
+
+<div id="legacy-actions" hidden>
+  <button id="b-clinic"></button><button id="b-ex"></button><button id="b-mx"></button>
+  <button id="b-ca"></button><button id="b-co"></button><button id="b-st"></button>
+  <button id="b-au"></button><button id="b-kb"></button>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

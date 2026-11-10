@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Remedy Finder — an offline repertory workbench for homeopathic study</title>
+<meta name="description" content="A single-file, offline homeopathic repertory workbench. 178 remedies, 634 symptoms, 30,412 graded links from Repertorium Publicum (2008). Free for noncommercial use."/>
+<meta name="author" content="Dr Sohil Momin"/>
+<meta name="theme-color" content="#0f766e"/>
+<meta property="og:title" content="Remedy Finder — offline repertory workbench"/>
+<meta property="og:description" content="178 remedies · 634 symptoms · 30,412 graded repertory links. Runs offline, no account, no tracking."/>
+<meta property="og:image" content="../screenshots/desktop-results.png"/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="../site/assets/icon.svg" type="image/svg+xml"/>
+<style>
+:root{--paper:#f6f4ef;--surface:#fffdf8;--ink:#1a1a17;--ink-2:#6d685d;--line:#e0dbcf;
+--accent:#0f766e;--accent-2:#0d9488;--accent-soft:#e6f2f0;--gold:#a8701a;--gold-soft:#fbf1df;
+--r:14px;--sh:0 2px 4px rgba(26,26,23,.05),0 18px 40px -24px rgba(26,26,23,.3);
+--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root{--paper:#0e1211;--surface:#151b19;--ink:#ece9e1;--ink-2:#9aa39c;
+--line:#28322e;--accent:#2fbfae;--accent-2:#48d3c2;--accent-soft:#11312d;--gold:#e0a94a;--gold-soft:#2a2317}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.6;
+-webkit-font-smoothing:antialiased;font-size:16px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;display:block}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);background:color-mix(in srgb,var(--paper) 88%,transparent);
+border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em}
+.brand .m{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,var(--accent),var(--accent-2));
+color:#fff;display:grid;place-items:center;font-size:17px}
+nav.links{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+nav.links a{padding:8px 12px;border-radius:9px;font-size:14px;color:var(--ink-2);font-weight:600}
+nav.links a:hover{background:var(--surface);color:var(--ink);text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;
+border-radius:11px;font-weight:650;font-size:15px;border:1px solid transparent;transition:.15s}
+.btn-p{background:var(--accent);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.btn-p:hover{background:var(--accent-2);text-decoration:none}
+.btn-g{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn-g:hover{border-color:var(--ink-2);text-decoration:none}
+.hero{padding:64px 0 40px;display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.08em;
+text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:5px 12px;border-radius:999px}
+h1{font-size:clamp(30px,4.6vw,50px);line-height:1.06;letter-spacing:-.03em;margin:16px 0 14px;font-weight:760}
+.lede{font-size:17.5px;color:var(--ink-2);max-width:52ch}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.facts{display:flex;gap:22px;flex-wrap:wrap;margin-top:26px;font-size:13.5px;color:var(--ink-2)}
+.facts b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.shot{border-radius:var(--r);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh);background:var(--surface)}
+section{padding:52px 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;margin:0 0 8px}
+.sub{color:var(--ink-2);margin:0 0 26px;max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card h3{margin:0 0 6px;font-size:15.5px}
+.card p{margin:0;font-size:14px;color:var(--ink-2)}
+.card .k{font-size:11px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--surface);
+border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+th{background:var(--paper);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
+tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums;font-weight:650}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.author{display:flex;gap:16px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);
+border-radius:var(--r);padding:20px}
+.author .av{width:56px;height:56px;border-radius:50%;background:linear-gradient(150deg,var(--accent),var(--accent-2));
+color:#fff;display:grid;place-items:center;font-weight:750;font-size:19px;flex:0 0 auto}
+.author p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
+.sponsor{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:16px}
+.sponsor a{display:block;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--surface);
+font-size:14px;font-weight:600;color:var(--ink)}
+.sponsor a span{display:block;font-size:12px;color:var(--ink-2);font-weight:500}
+.note{background:var(--gold-soft);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent);
+border-radius:11px;padding:12px 16px;font-size:13.5px;color:var(--gold);margin-top:18px}
+footer{border-top:1px solid var(--line);padding:34px 0 60px;font-size:13px;color:var(--ink-2)}
+footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}
+ul.clean{margin:0;padding-left:18px;font-size:14.5px;color:var(--ink-2)}
+ul.clean li{margin-bottom:6px}
+@media (max-width:860px){.hero{grid-template-columns:1fr;gap:26px;padding-top:34px}.two{grid-template-columns:1fr}
+nav.links a{padding:6px 8px;font-size:13px}.top .wrap{height:auto;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><span class="m">✦</span> Remedy Finder</div>
+  <nav class="links">
+    <a href="../site/index.html">Open app</a>
+    <a href="#features">Features</a>
+    <a href="#data">Data</a>
+    <a href="#download">Download</a>
+    <a href="#author">Author</a>
+    <a class="btn btn-p" href="../site/index.html" style="min-height:38px;padding:0 14px;font-size:14px">Launch</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
+  <section class="hero" style="border-top:none">
+    <div>
+      <span class="eyebrow">Offline · no account · no tracking</span>
+      <h1>A repertory workbench, not a symptom search box.</h1>
+      <p class="lede">Pick the symptoms that are <em>characteristic</em>, watch the remedy ranking move, and read the source text behind every link. 178 remedies, 634 symptoms, 30,412 graded links from <em>Repertorium Publicum</em> (2008), plus public-domain materia medica quotations.</p>
+      <div class="cta">
+        <a class="btn btn-p" href="../site/index.html">Open the app</a>
+        <a class="btn btn-g" href="../dist/remedy-finder.html" download>Download single file (517 KB)</a>
+      </div>
+      <div class="facts">
+        <div><b>178</b>remedies</div>
+        <div><b>634</b>symptoms</div>
+        <div><b>30.4k</b>graded links</div>
+        <div><b>0</b>network calls</div>
+      </div>
+    </div>
+    <div class="shot"><img src="../screenshots/desktop-results.png" alt="Remedy Finder results pane showing Aconitum ranked first for four selected symptoms" loading="lazy"/></div>
+  </section>
+
+  <section id="features">
+    <h2>Built for the way a case actually moves</h2>
+    <p class="sub">Symptoms on the left, ranking on the right — both visible at once on a laptop, one thumb away on a phone.</p>
+    <div class="grid">
+      <div class="card"><div class="k">Picker</div><h3>Symptom counts on every row</h3><p>The number beside a symptom is how many remedies carry it. Rare symptoms do the discriminating; the interface tells you which are rare before you click.</p></div>
+      <div class="card"><div class="k">Ranking</div><h3>Grades, not just matches</h3><p>Grade-3 characteristic links score higher than marginal ones. Matched, grade-3 and uniqueness counts sit on every card so you can see why a remedy rose.</p></div>
+      <div class="card"><div class="k">Materia medica</div><h3>Quoted source text</h3><p>Every remedy carries a verbatim passage from Boericke (1906) or Allen (1916) where the text exists, labelled with book and year.</p></div>
+      <div class="card"><div class="k">Case work</div><h3>Cases, follow-ups, exports</h3><p>Save a repertorisation as a case, add dated follow-ups with remedy and potency, export Markdown, CSV, JSON or an Anki deck.</p></div>
+      <div class="card"><div class="k">Study</div><h3>Spaced repetition built in</h3><p>Push any remedy into an SRS deck, review with SM-2 scheduling, keep a streak, and see the month on a calendar.</p></div>
+      <div class="card"><div class="k">Analysis</div><h3>Matrix, compare, graph, audit</h3><p>Ten remedies side by side, shared-versus-unique comparison, a relationship graph, and a data audit that reports what it cannot verify.</p></div>
+    </div>
+  </section>
+
+  <section id="data">
+    <h2>Where the data comes from</h2>
+    <p class="sub">Every link is traceable to a public source. Nothing is invented, and gaps are reported rather than hidden.</p>
+    <table>
+      <thead><tr><th>Layer</th><th>Source</th><th>Scale</th></tr></thead>
+      <tbody>
+        <tr><td>Rubric grades</td><td>Repertorium Publicum (2008), Vladimir Polony — GPL v3</td><td class="num">74,480 rubrics</td></tr>
+        <tr><td>Symptom → remedy links</td><td>Mapped to this app's 634 symptoms by name, synonym and checked alias</td><td class="num">30,412 links</td></tr>
+        <tr><td>Materia medica text</td><td>Boericke 1906 · Allen 1916 · Kent 1904 · Clarke 1900 · Nash 1899 · Guernsey 1886 and others (public domain)</td><td class="num">132 quotations</td></tr>
+        <tr><td>Verification</td><td>Source attributions checked against 12 full texts in the dataset repository</td><td class="num">170 / 178 remedies</td></tr>
+      </tbody>
+    </table>
+    <div class="note">Educational use only. This is a teaching and study tool: it ranks similarity, it does not diagnose, prescribe, or replace a qualified practitioner.</div>
+  </section>
+
+  <section id="download">
+    <h2>Three ways to run it</h2>
+    <div class="grid">
+      <div class="card"><div class="k">Web / PWA</div><h3>Open it in a browser</h3><p>Works on any device. On Android or desktop Chrome, choose “Install” to keep it offline with its own icon.</p><p style="margin-top:8px"><a href="../site/index.html">Open the app →</a></p></div>
+      <div class="card"><div class="k">Single file</div><h3>One HTML file, no server</h3><p>517 KB. Save it anywhere, double-click, done — including from a USB stick with no network.</p><p style="margin-top:8px"><a href="../dist/remedy-finder.html" download>Download →</a></p></div>
+      <div class="card"><div class="k">Releases</div><h3>Windows / Android builds</h3><p>Tagged releases attach the single-file build and a portable Windows launcher produced by CI.</p><p style="margin-top:8px"><a href="https://github.com/drsamonline/remedy-finder/releases">Releases →</a></p></div>
+    </div>
+  </section>
+
+  <section id="author">
+    <h2>Author and licence</h2>
+    <div class="two">
+      <div>
+        <div class="author">
+          <div class="av">SM</div>
+          <div>
+            <strong>Dr Sohil Momin</strong>
+            <p>Homeopathic physician and builder of offline-first, open-source clinical tools. This app is part of a set of single-file tools that run without a server, an account or a subscription.</p>
+            <p style="margin-top:8px"><a href="https://drsamonline.github.io/">All projects</a> · <a href="mailto:sohilmomin2000@gmail.com">sohilmomin2000@gmail.com</a></p>
+          </div>
+        </div>
+        <p style="font-size:13.5px;color:var(--ink-2);margin-top:14px">
+          <strong>Licence:</strong> PolyForm Noncommercial 1.0.0 — free for personal study, teaching, clinics and noncommercial organisations.
+          <br/><strong>Repertory data:</strong> Repertorium Publicum is GPL v3; the public-domain materia medicas are CC0. See <a href="https://github.com/drsamonline/remedy-finder/blob/main/ATTRIBUTION.md">ATTRIBUTION.md</a>.
+        </p>
+      </div>
+      <div>
+        <h3 style="margin:0 0 6px;font-size:15px">Support the work</h3>
+        <p style="margin:0 0 4px;font-size:14px;color:var(--ink-2)">One person, no company, no ads. If this saved you an afternoon:</p>
+        <div class="sponsor">
+          <a href="upi://pay?pa=drsohilboi@ybl&amp;cu=INR">UPI <span>drsohilboi@ybl</span></a>
+          <a href="https://ko-fi.com/matneo">Ko-fi <span>ko-fi.com/matneo</span></a>
+          <a href="https://paypal.me/drsohilmomin">PayPal <span>paypal.me/drsohilmomin</span></a>
+          <a href="https://www.amazon.com/stores/author/B08ZT331LY/allbooks">Books <span>the author's other work</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer><div class="wrap">
+  <span>© 2026 Dr Sohil Momin · PolyForm Noncommercial 1.0.0</span>
+  <span>Educational tool · not a medical device</span>
+</div></footer>
+</body>
+</html>

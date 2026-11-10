@@ -1,0 +1,14 @@
+{
+  "name": "Remedy Finder — Homeopathic Repertory Workbench",
+  "short_name": "Remedy Finder",
+  "description": "Offline repertorisation workbench: 178 remedies, 634 symptoms, 30,412 graded repertory links.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f4ef",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
