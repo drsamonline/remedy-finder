@@ -25,7 +25,7 @@ jobs:
       - name: Zip release assets
         run: |
           Compress-Archive -Path dist/remedy-finder.html -DestinationPath remedy-finder-html.zip -Force
-          Compress-Archive -Path dist/remedy-finder.exe -DestinationPath remedy-finder-windows.zip -Force -ErrorAction SilentlyContinue
+          Compress-Archive -Path dist/RemedyFinder.exe -DestinationPath remedy-finder-windows.zip -Force
       - uses: actions/upload-artifact@v4
         with:
           name: RemedyFinder-windows
