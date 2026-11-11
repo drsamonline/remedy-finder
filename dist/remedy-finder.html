@@ -122,6 +122,19 @@ mark{background:var(--gold-soft);color:var(--ink);font-weight:600;border-radius:
 .pkn{display:block;font-size:12px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pkc{display:block;font-size:10.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 
+/* ---------------- picker mode switch ---------------- */
+.modeswitch{display:flex;gap:3px;padding:8px 12px 0;flex:0 0 auto}
+.pm{flex:1;min-height:32px;border-radius:8px;font-size:12px;font-weight:700;color:var(--ink-2);
+ background:var(--surface);border:1px solid var(--line)}
+.pm[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pm:hover:not([aria-selected="true"]){background:var(--surface-2);color:var(--ink)}
+.sc.rb-row span:nth-child(2){font-size:12.5px;line-height:1.35}
+.sc.rb-row .n{background:var(--accent-soft);color:var(--accent)}
+.trc-chip.rbchip{background:var(--gold-soft);border-color:color-mix(in srgb,var(--gold) 30%,transparent);color:var(--gold)}
+.trc-chip.rbchip em{font-style:normal;font-weight:800;font-size:9.5px;background:color-mix(in srgb,var(--gold) 22%,transparent);
+ border-radius:4px;padding:1px 4px;margin-right:2px}
+.msi.rub{background:var(--gold-soft);color:var(--gold);font-weight:600}
+
 /* ---------------- boards ---------------- */
 .boards{display:flex;gap:5px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
 .boards::-webkit-scrollbar{display:none}
@@ -527,7 +540,7 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v13.3</div>
+          <div class="bsub">Repertory workbench · v13.4</div>
         </div>
       </div>
       <label class="casebar">
@@ -548,6 +561,10 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
 
     <div class="workspace">
       <section class="picker" aria-label="Symptom picker">
+        <div class="modeswitch" role="tablist" aria-label="Picker mode">
+          <button class="pm" role="tab" data-picker="symptoms" aria-selected="true">Symptoms</button>
+          <button class="pm" role="tab" data-picker="rubrics" aria-selected="false">Repertory</button>
+        </div>
         <div class="boards" id="boards" role="group" aria-label="Boards"></div>
         <div class="searchrow">
           <div class="sw">
@@ -971,6 +988,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     const cur = b[0];
     this.s.sel = new Set(cur.sel || []);
     this.weights = Object.assign({}, cur.weights || {});
+    if (this.rubSel) this.rubSel = new Set(cur.rub || []);
   };
   U.saveBoards = function () { H.St.s(BOARD_KEY, this.boards); };
   U.syncBoard = function () {
@@ -978,7 +996,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (!b) return;
     b.sel = [...this.s.sel];
     b.weights = Object.assign({}, this.weights);
+    if (this.rubSel) b.rub = [...this.rubSel];
     this.saveBoards();
+    this.renderBoards();
   };
   U.boardSwitch = function (id) {
     this.syncBoard();
@@ -987,6 +1007,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     this.activeBoard = id;
     this.s.sel = new Set(b.sel || []);
     this.weights = Object.assign({}, b.weights || {});
+    if (this.rubSel) this.rubSel = new Set(b.rub || []);
     this.rc(); this.rs(); this.rt(); this.renderBoards();
     if (this.s.view === 'results') this.rr();
   };
@@ -995,7 +1016,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (!name) return;
     this.syncBoard();
     const id = 'b' + Date.now().toString(36);
-    this.boards.push({ id, name: name.slice(0, 24), sel: [], weights: {} });
+    this.boards.push({ id, name: name.slice(0, 24), sel: [], weights: {}, rub: [] });
     this.saveBoards();
     this.boardSwitch(id);
   };
@@ -1008,11 +1029,20 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (this.activeBoard === id) this.boardSwitch(this.boards[0].id); else this.renderBoards();
     this.undo(`Board “${removed.name}” deleted`, () => { this.boards.splice(i, 0, removed); this.saveBoards(); this.renderBoards(); });
   };
+  U.setPickerMode = function (m) {
+    this.pickerMode = m;
+    document.querySelectorAll('[data-picker]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.picker === m)));
+    const si = $('search');
+    if (si) si.placeholder = m === 'rubrics' ? 'Search rubrics — fear of death, thirst small, worse consolation' : this.t('search');
+    if (m === 'rubrics') this.loadRepertory(() => this.rs());
+    this.rs();
+  };
+
   U.renderBoards = function () {
     const host = $('boards');
     if (!host) return;
     host.innerHTML = this.boards.map(b => {
-      const n = (b.sel || []).length;
+      const n = (b.sel || []).length + ((b.rub || []).length);
       const on = b.id === this.activeBoard;
       return `<button class="bd-chip ${on ? 'on' : ''}" data-board="${b.id}" aria-pressed="${on}">
         ${esc(b.name)}<span>${n}</span></button>`;
@@ -1054,8 +1084,184 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
        </button>`).join('');
   };
 
+  /* ---------- full repertory mode ---------- */
+  U.pickerMode = 'symptoms';
+  U.rubSel = new Set();
+  U.rubIndex = null;
+
+  U.loadRepertory = function (cb) {
+    if (window.HRF_RUB) { this.parseRepertory(); return cb && cb(); }
+    if (this._rubLoading) return;
+    this._rubLoading = true;
+    this.toast('Loading repertory…');
+    const s = document.createElement('script');
+    s.src = 'assets/repertory.js';
+    s.onload = () => { this.parseRepertory(); this._rubLoading = false; if (cb) cb(); };
+    s.onerror = () => {
+      this._rubLoading = false;
+      this.toast('Repertory data is not in this build — use remedy-finder-full.html or the web app');
+      this.setPickerMode('symptoms');
+    };
+    document.head.appendChild(s);
+  };
+
+  U.parseRepertory = function () {
+    if (this.rubIndex || !window.HRF_RUB) return;
+    const D = window.HRF_RUB, codes = D.codes, chs = D.ch || [];
+    const t0 = performance.now();
+    this.rubIndex = D.r.map(([p, links]) => {
+      let seg;
+      if (D.v >= 2) {
+        const k = p.indexOf('|');
+        seg = [chs[+p.slice(0, k)]].concat(p.slice(k + 1).split('|'));
+      } else {
+        seg = p.split('|');
+      }
+      const n = D.v >= 2 ? Math.floor(links.length / 2) : links.split(',').length;
+      return { p: seg.join(' › '), seg, l: links, n, g: null };
+    });
+    this.rubPost = new Map();
+    this.rubIndex.forEach((r, i) => {
+      r.seg.forEach(sgm => {
+        sgm.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).forEach(w => {
+          if (w.length < 3) return;
+          const k = w.slice(0, 5);
+          if (!this.rubPost.has(k)) this.rubPost.set(k, new Set());
+          this.rubPost.get(k).add(i);
+        });
+      });
+    });
+    this._rubMs = Math.round(performance.now() - t0);
+  };
+
+  U.rubric = function (i) {
+    const r = this.rubIndex[i];
+    if (!r) return null;
+    if (r.g) return r;
+    const D = window.HRF_RUB, codes = D.codes, g = {};
+    if (D.v >= 2) {
+      const base = D.v === 3 ? 36 : 16;
+      for (let k = 0; k < r.l.length; k += 2) {
+        const v = parseInt(r.l.substr(k, 2), base);
+        g[codes[Math.floor(v / 3)]] = (v % 3) + 1;
+      }
+    } else {
+      r.l.split(',').forEach(t => {
+        const [idx, gr] = t.split(':');
+        g[codes[+idx]] = gr ? +gr : 2;
+      });
+    }
+    r.g = g;
+    return r;
+  };
+
+  U.searchRubrics = function (q) {
+    if (!this.rubIndex) return [];
+    const SYN = { worse: ['agg'], better: ['amel'], worseat: ['agg'], aggravated: ['agg'], relieved: ['amel'], relief: ['amel'] };
+    const words = q.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+    if (!words.length) return [];
+    let acc = null;
+    words.forEach(w => {
+      const alts = [w].concat(SYN[w] || []);
+      let union = null;
+      alts.forEach(a => {
+        const set = this.rubPost.get(a.slice(0, 5));
+        if (!set) return;
+        union = union ? new Set([...union, ...set]) : new Set(set);
+      });
+      if (!union) { acc = new Set(); return; }
+      acc = acc ? new Set([...acc].filter(x => union.has(x))) : union;
+    });
+    const list = [...(acc || [])];
+    const last = words[words.length - 1].slice(0, 5);
+    const rank = i => {
+      const r = this.rubIndex[i];
+      const low = r.p.toLowerCase();
+      let m = 0;
+      words.forEach(w => { if (low.includes(w.slice(0, 5))) m++; });
+      const leaf = r.seg[r.seg.length - 1].toLowerCase();
+      return m * 10 + (leaf.includes(last) ? 5 : 0) - r.seg.length + Math.min(4, r.n / 50);
+    };
+    list.sort((a, b) => rank(b) - rank(a));
+    return list.slice(0, 150);
+  };
+
+  U.toggleRubric = function (i) {
+    if (this.rubSel.has(i)) this.rubSel.delete(i); else this.rubSel.add(i);
+    this.rs(); this.rt();
+    if (this.s.view === 'results') this.rr();
+  };
+
+  U.rsRubrics = function () {
+    const host = $('symptoms');
+    if (!host) return;
+    if (!this.rubIndex) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('results','i-lg')}</div><div>Loading repertory…</div></div>`; return; }
+    const q = (this.s.q || '').trim();
+    if (q.length < 3) {
+      host.innerHTML = `<div class="emp"><div class="emp-i">${ic('find','i-lg')}</div>
+        <div>Type two or three words — <em>fear of death</em>, <em>thirst small</em>, <em>worse consolation</em>.</div>
+        <div class="srcl" style="margin-top:6px">30,343 rubrics from Repertorium Publicum, each carrying at least three of this app's 178 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
+      return;
+    }
+    const hits = this.searchRubrics(q);
+    if (!hits.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No rubric matches “${esc(q)}”.</div></div>`; return; }
+    hits.sort((a, b) => this.rubIndex[b].n - this.rubIndex[a].n);
+    host.innerHTML = `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Rubrics</span>
+        <span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+      <div class="sl">${hits.map(i => {
+        const r = this.rubIndex[i];
+        const on = this.rubSel.has(i);
+        return `<div class="sc rb-row ${on ? 'sel' : ''}" data-rub="${i}" role="checkbox" aria-checked="${on}" tabindex="0">
+          <input type="checkbox" ${on ? 'checked' : ''} tabindex="-1" aria-hidden="true">
+          <span>${esc(r.p)}</span><span class="n">${r.n}</span></div>`;
+      }).join('')}</div></div>`;
+  };
+
+  /* ---------- combined ranking (symptoms + rubrics) ---------- */
+  U.rankCombined = async function () {
+    const symSel = [...this.s.sel], W = this.weightMap(), rub = [...this.rubSel];
+    if (!rub.length) return H.W.rank(symSel, this.s.mode, W);
+    this.parseRepertory();
+    const CHW = { Mind: 5, Generalities: 4 };
+    const out = [];
+    for (const code in H.DB.remedies) {
+      const r = H.DB.remedies[code];
+      const base = symSel.length ? H.Sc.sc(code, symSel, this.s.mode, W)
+        : { code, matchScore: 0, diffScore: 0, confidence: 0, matchCount: 0, uniqueCount: 0, matchedIds: [], uniqueIds: [] };
+      let extra = 0, rmatch = 0, gsum = 0;
+      const rids = [];
+      for (const i of rub) {
+        const rr = this.rubric(i);
+        const g = rr.g[code];
+        if (!g) continue;
+        const chapter = rr.seg[0];
+        let w = CHW[chapter] || 2;
+        const low = rr.p.toLowerCase();
+        if (low.includes('agg') || low.includes('amel')) w = 3;
+        const rarity = 1 + 0.5 * Math.log2(178 / Math.max(1, rr.n));
+        extra += w * rarity * (1 + (g - 1) * 0.5);
+        gsum += g;
+        rmatch++; rids.push(i);
+      }
+      let mb = 1;
+      if (this.s.mode === 'acute' && r.acute) mb = 1.15;
+      if (this.s.mode === 'constitutional' && r.constitutional) mb = 1.15;
+      const total = (base.matchScore + extra) * (symSel.length ? 1 : mb);
+      if (!total) continue;
+      out.push({
+        code, matchScore: Math.round(total * 10) / 10,
+        diffScore: base.diffScore, confidence: Math.min(100, Math.round(total / ((symSel.length + rub.length) * 10) * 100)),
+        matchCount: base.matchCount + rmatch, uniqueCount: base.uniqueCount,
+        matchedIds: base.matchedIds, uniqueIds: base.uniqueIds, rubricIds: rids, gradeSum: gsum
+      });
+    }
+    out.sort((a, b) => b.matchScore - a.matchScore || (b.gradeSum || 0) - (a.gradeSum || 0) || b.diffScore - a.diffScore);
+    return out;
+  };
+
   /* ---------- symptom picker ---------- */
   U.rs = function () {
+    if (this.pickerMode === 'rubrics') return this.rsRubrics();
     const host = $('symptoms');
     if (!host) return;
     const S = H.DB.symptoms, q = (this.s.q || '').toLowerCase().trim();
@@ -1110,9 +1316,14 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     const tray = $('tray');
     if (!tray) return;
     const S = H.DB.symptoms;
-    if (!this.s.sel.size) { tray.style.display = 'none'; return; }
+    const nRub = this.rubSel ? this.rubSel.size : 0;
+    if (!this.s.sel.size && !nRub) { tray.style.display = 'none'; return; }
     tray.style.display = 'flex';
-    $('trc').textContent = `${this.s.sel.size} ${this.s.sel.size > 1 ? this.t('symptoms') : this.t('symptom')}`;
+    const nS = this.s.sel.size, total = nS + nRub;
+    const parts = [];
+    if (nS) parts.push(`${nS} ${nS > 1 ? this.t('symptoms') : this.t('symptom')}`);
+    if (nRub) parts.push(`${nRub} ${nRub > 1 ? 'rubrics' : 'rubric'}`);
+    $('trc').textContent = parts.join(' + ') || `${total}`;
     $('trch').innerHTML = [...this.s.sel].map(id => {
       const s = S[id];
       if (!s) return '';
@@ -1122,7 +1333,11 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       return `<span class="trc-chip w${m === 1.5 ? ' up' : (m === 0.5 ? ' down' : '')}">
         <button class="wt" data-wt="${id}" title="${this.t(label)} — ${this.t('weightTip')}" aria-label="${this.t(label)}">${glyph}</button>
         ${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>`;
-    }).join('');
+    }).join('') + (this.rubSel ? [...this.rubSel].map(i => {
+      const r = this.rubIndex ? this.rubIndex[i] : null;
+      const label = r ? r.seg[r.seg.length - 1] : 'rubric';
+      return `<span class="trc-chip rbchip" title="${esc(r ? r.p : '')}"><em>R</em>${esc(label)}<button data-rmrub="${i}" aria-label="Remove rubric">✕</button></span>`;
+    }).join('') : '');
   };
 
   /* ---------- symptom weight ---------- */
@@ -1174,7 +1389,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (!v) return;
     v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>${this.t('ranking')} ${this.s.sel.size} ${this.t('symptoms')}…</div></div>`;
     this.openResults();
-    const res = await H.W.rank([...this.s.sel], this.s.mode, this.weightMap());
+    const res = await this.rankCombined();
     this.s.last = res;
     const S = H.DB.symptoms;
     const strip = `<div class="case-strip">${[...this.s.sel].map(id => S[id] ? `<span class="trc-chip">${esc(S[id].name)}<button data-rm2="${id}" aria-label="Remove">✕</button></span>` : '').join('')}</div>`;
@@ -1207,7 +1422,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     }).join('')}</div>` : '';
     v.innerHTML = `<div class="rh">
         <div><div class="rt">${this.t('topRemedies')}</div>
-          <div class="rs">${res.length} ${this.t('remedies')} · ${this.s.sel.size} ${this.t('symptoms')}${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} ${this.t('strong')}, ${dn} ${this.t('doubtful')}` : ''; })()} · ${this.t(this.s.mode)}</div></div>
+          <div class="rs">${res.length} ${this.t('remedies')} · ${(() => { const nS = this.s.sel.size, nR = this.rubSel ? this.rubSel.size : 0; const p = []; if (nS) p.push(nS + ' ' + this.t('symptoms')); if (nR) p.push(nR + ' ' + (nR > 1 ? 'rubrics' : 'rubric')); return p.join(' + ') || '0'; })()}${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} ${this.t('strong')}, ${dn} ${this.t('doubtful')}` : ''; })()} · ${this.t(this.s.mode)}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} ${this.t('back')}</button>
           <button class="btn bg" id="b-sv">${ic("save","i-sm")} ${this.t('save')}</button>
@@ -1232,17 +1447,21 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
           <div class="scs">
             <div class="sc2"><span class="sc2-l">${this.t('match')}</span><span class="sc2-v">${r.matchScore}</span>
               <div class="sb"><div class="sbf" style="width:${pct}%"></div></div></div>
-            <div class="sc2"><span class="sc2-l">${this.t('matched')}</span><span class="sc2-v">${r.matchCount}/${this.s.sel.size}</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('matched')}</span><span class="sc2-v">${r.matchCount}/${this.s.sel.size + (this.rubSel ? this.rubSel.size : 0)}</span></div>
             <div class="sc2"><span class="sc2-l">${this.t('grade3')}</span><span class="sc2-v">${g3}</span></div>
             <div class="sc2"><span class="sc2-l">${this.t('unique')}</span><span class="sc2-v">${r.diffScore}%</span></div>
           </div>
-          <div class="ms">${(r.matchedIds || []).slice(0, 8).map(id => {
+          ${(r.rubricIds && r.rubricIds.length) ? `<div class="ms">${r.rubricIds.slice(0, 4).map(i => {
+            const rr = this.rubIndex[i]; if (!rr) return '';
+            return `<span class="msi rub" title="${esc(rr.p)}">R · ${esc(rr.seg[rr.seg.length - 1])}</span>`;
+          }).join('')}</div>` : ''}
+          ${(r.matchedIds || []).length ? `<div class="ms">${(r.matchedIds || []).slice(0, 8).map(id => {
             const s = S[id];
             if (!s) return '';
             const u = (r.uniqueIds || []).includes(id);
             const star = (rm.strong || []).includes(id) ? ' ★' : '';
             return `<span class="msi ${u ? 'u' : ''}">${esc(s.name)}${star}</span>`;
-          }).join('')}</div>
+          }).join('')}</div>` : ''}
           <div class="ra">
             <button class="btn bg" data-dt="${r.code}">${this.t('details')}</button>
             <button class="btn bg" data-cm="${r.code}">${ic("compare","i-sm")} ${this.t('compare')}</button>
@@ -1395,6 +1614,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       if (this.s.view === 'results') this.rr();
     }));
     document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => this.view(b.dataset.view)));
+    document.querySelectorAll('[data-picker]').forEach(b => b.addEventListener('click', () => this.setPickerMode(b.dataset.picker)));
     const bb = $('boards');
     if (bb) bb.addEventListener('click', e => {
       const add = e.target.closest('[data-board-add]');
@@ -1435,6 +1655,8 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         h.setAttribute('aria-expanded', box.classList.contains('open'));
         return;
       }
+      const rub = e.target.closest('[data-rub]');
+      if (rub) { this.toggleRubric(parseInt(rub.dataset.rub, 10)); return; }
       const rem = e.target.closest('[data-rem]');
       if (rem) { this.showDetail(rem.dataset.rem); return; }
       const row = e.target.closest('.sc'); if (!row) return;
@@ -1455,6 +1677,8 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     $('tray').addEventListener('click', e => {
       const w = e.target.closest('[data-wt]');
       if (w) { this.cycleWeight(parseInt(w.dataset.wt, 10)); return; }
+      const rr = e.target.closest('[data-rmrub]');
+      if (rr) { this.rubSel.delete(parseInt(rr.dataset.rmrub, 10)); this.rs(); this.rt(); if (this.s.view === 'results') this.rr(); return; }
       const r = e.target.closest('[data-rm]'); if (!r) return;
       const id = parseInt(r.dataset.rm, 10);
       const name = H.DB.symptoms[id] ? H.DB.symptoms[id].name : 'symptom';
@@ -1462,7 +1686,10 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       if (this.s.view === 'results') this.rr();
       this.undo(`Removed “${name}”`, () => { this.s.sel.add(id); this.rs(); this.rt(); if (this.s.view === 'results') this.rr(); });
     });
-    on('b-find', () => { if (!this.s.sel.size) return this.toast('Select at least one symptom'); this.rr(); });
+    on('b-find', () => {
+      if (!this.s.sel.size && !(this.rubSel && this.rubSel.size)) return this.toast('Select at least one symptom');
+      this.rr();
+    });
 
     const caseIn = $('case-name');
     if (caseIn) {

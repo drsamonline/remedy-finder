@@ -1,5 +1,28 @@
 # Changelog
 
+## 13.4.0 — 2026-11-11
+
+The last item on the backlog: the repertory itself.
+
+### Added
+- **Repertory picker mode.** A second mode beside *Symptoms*: search **30,343 rubrics**
+  from Repertorium Publicum by words and select rubrics directly. Every rubric carries
+  at least three of the app's 178 remedies, with the printed grade kept.
+- **Mixed repertorisation.** Selected rubrics and curated symptoms add into one ranking,
+  so a case can combine a searched rubric (*Mind › fear › death*) with the curated
+  symptom vocabulary.
+- **Rubric scoring.** chapter weight × rarity `1 + 0.5·log₂(178/n)` × grade
+  `1 + (g−1)·0.5`, with a grade-sum tie-break so equal scores order sensibly.
+- **Two builds.** `remedy-finder.html` stays at 586 KB; `remedy-finder-full.html`
+  (2.5 MB) inlines the repertory. The web app loads `assets/repertory.js` (1.9 MB) only
+  when the mode is opened, and says so plainly when the data is absent.
+
+### Fixed
+- Rubric link encoding: two-hex-digit packing overflowed past 255 and silently
+  corrupted every remedy index above 85. Switched to base-36 pairs; the parse is now
+  verified by a test that asserts Acon and Arsenicum both grade 3 in *Mind › fear › death*.
+- Empty matched-symptom strip rendering a blank bar on rubric-only results.
+
 ## 13.3.0 — 2026-11-11
 
 ### Added

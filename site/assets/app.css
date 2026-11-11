@@ -110,6 +110,19 @@ mark{background:var(--gold-soft);color:var(--ink);font-weight:600;border-radius:
 .pkn{display:block;font-size:12px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pkc{display:block;font-size:10.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 
+/* ---------------- picker mode switch ---------------- */
+.modeswitch{display:flex;gap:3px;padding:8px 12px 0;flex:0 0 auto}
+.pm{flex:1;min-height:32px;border-radius:8px;font-size:12px;font-weight:700;color:var(--ink-2);
+ background:var(--surface);border:1px solid var(--line)}
+.pm[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pm:hover:not([aria-selected="true"]){background:var(--surface-2);color:var(--ink)}
+.sc.rb-row span:nth-child(2){font-size:12.5px;line-height:1.35}
+.sc.rb-row .n{background:var(--accent-soft);color:var(--accent)}
+.trc-chip.rbchip{background:var(--gold-soft);border-color:color-mix(in srgb,var(--gold) 30%,transparent);color:var(--gold)}
+.trc-chip.rbchip em{font-style:normal;font-weight:800;font-size:9.5px;background:color-mix(in srgb,var(--gold) 22%,transparent);
+ border-radius:4px;padding:1px 4px;margin-right:2px}
+.msi.rub{background:var(--gold-soft);color:var(--gold);font-weight:600}
+
 /* ---------------- boards ---------------- */
 .boards{display:flex;gap:5px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
 .boards::-webkit-scrollbar{display:none}
