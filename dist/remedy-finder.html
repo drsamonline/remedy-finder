@@ -631,7 +631,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v14.3</div>
+          <div class="bsub">Repertory workbench · v14.4</div>
         </div>
       </div>
       <label class="casebar">
@@ -1367,7 +1367,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (q.length < 3) {
       host.innerHTML = `<div class="emp"><div class="emp-i">${ic('find','i-lg')}</div>
         <div>Type two or three words — <em>fear of death</em>, <em>thirst small</em>, <em>worse consolation</em>.</div>
-        <div class="srcl" style="margin-top:6px">31,667 rubrics from Repertorium Publicum, each carrying at least three of this app's 297 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
+        <div class="srcl" style="margin-top:6px">39,737 rubrics from Repertorium Publicum, each carrying at least two of this app's 297 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
       return;
     }
     const hits = this.searchRubrics(q);
@@ -2224,7 +2224,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '14.3.0';
+  U.appVersion = '14.4.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {

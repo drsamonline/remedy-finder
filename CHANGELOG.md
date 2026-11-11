@@ -1,5 +1,23 @@
 # Changelog
 
+## 14.4.0 — 2026-11-11
+
+The repertory was thinner than it needed to be.
+
+### Changed
+- **Rubric coverage: 31,667 → 39,737** (+25.5%). The old index kept only rubrics
+  carrying at least three of the app's remedies; the source data supports two. A rubric
+  with two remedies discriminates *better* than one with twenty, so the filter was
+  excluding the sharpest material: 9,353 of the added rubrics are two-remedy rubrics.
+- Repertory file 2.1 MB → 2.75 MB; full single-file build 3.1 MB → 3.4 MB.
+
+### Fixed while rebuilding
+- Link encoding is `index × 3 + (grade − 1)` in base 36, not `× 4`. Encoding at ×4
+  decoded to the wrong remedy at the wrong grade — every rubric would have been subtly
+  wrong, and only a spot check against a known rubric (Acon and Ars at grade 3 for
+  *fear of death*) caught it.
+- Rubric paths use ` › ` as the separator, matching what the app already rendered.
+
 ## 14.3.0 — 2026-11-11
 
 Working without a mouse, and changing a passphrase without losing the vault.
