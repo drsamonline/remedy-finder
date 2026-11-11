@@ -1,5 +1,24 @@
 # Changelog
 
+## 14.9.0 — 2026-11-11
+
+Three small things, done properly.
+
+### Added
+- **Case sheet download.** One case as a self-contained HTML file with its own styling —
+  open it anywhere, print it, or save it as a PDF from the print dialog. No PDF writer,
+  no dependency: the browser already does that job.
+- **Board → case.** A "→ case" chip saves the active board as a clinic case, keeping its
+  symptoms. If the board has not synced yet it falls back to the live selection.
+- **Rare-rubric quiz** (Tools): a two- or three-remedy rubric, four remedy options, and
+  graded feedback that names the correct remedy and its grade in that rubric. Correct
+  answers are the hard ones — rare rubrics are exactly where recall fails.
+
+### Fixed — build
+- The full single-file build inlined the repertory **twice** (6.6 MB instead of 3.8 MB):
+  `str.replace('</body>')` matched the `</body>` inside the new case-sheet template as
+  well as the document's own. It now splits on the last occurrence.
+
 ## 14.8.1 — 2026-11-11
 
 The reason the last few releases looked like they never arrived.

@@ -623,3 +623,19 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .xt #x-re{flex:0 0 auto;padding:0 10px}
   .xleg{font-size:10.5px}
 }
+
+/* ---------------- quiz ---------------- */
+.qz-rubric{font-size:15px;font-weight:600;line-height:1.45;background:var(--surface-2);border:1px solid var(--line);
+ border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.qz-opts{display:grid;gap:8px}
+.qz-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;
+ background:var(--surface);border:1px solid var(--line-2);border-radius:11px;padding:12px 14px;
+ font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;min-height:48px}
+.qz-opt span{font-weight:500;font-size:11px;color:var(--ink-3)}
+.qz-opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.qz-opt.right{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.qz-opt.wrong{border-color:#c2410c;background:#fdeee7;color:#8a3b18}
+.qz-opt.dim{opacity:.5}
+.qz-fb{margin-top:12px;font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:10px}
+.qz-fb.ok{background:var(--ok-soft);color:var(--ok)}
+.qz-fb.no{background:#fdeee7;color:#8a3b18}

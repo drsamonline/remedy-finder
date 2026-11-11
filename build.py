@@ -50,6 +50,8 @@ print('dist/remedy-finder.html', round(len(html.encode())/1024, 1), 'KB')
 # full build: same app with the 3,000-rubric repertory inlined
 rub = site / 'assets/repertory.js'
 if rub.exists():
-    full = html.replace('</body>', '<script>\n' + rub.read_text(encoding='utf-8') + '\n</script>\n</body>')
+    # only the document's final </body> — the inlined JS contains '</body>' inside a string
+    head, sep, tail = html.rpartition('</body>')
+    full = head + '<script>\n' + rub.read_text(encoding='utf-8') + '\n</script>\n' + sep + tail
     (out / 'remedy-finder-full.html').write_text(full, encoding='utf-8')
     print('dist/remedy-finder-full.html', round(len(full.encode())/1024, 1), 'KB')

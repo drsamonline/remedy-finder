@@ -1,6 +1,6 @@
 /* Remedy Finder — offline cache + background backup reminder.
    Bump CACHE whenever an asset changes. */
-const CACHE = 'rf-14.8.1';
+const CACHE = 'rf-14.9.0';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './assets/app.css', './assets/app.js', './assets/data.js', './assets/ui.js',

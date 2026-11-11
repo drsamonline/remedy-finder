@@ -636,6 +636,22 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .xleg{font-size:10.5px}
 }
 
+/* ---------------- quiz ---------------- */
+.qz-rubric{font-size:15px;font-weight:600;line-height:1.45;background:var(--surface-2);border:1px solid var(--line);
+ border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.qz-opts{display:grid;gap:8px}
+.qz-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;
+ background:var(--surface);border:1px solid var(--line-2);border-radius:11px;padding:12px 14px;
+ font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;min-height:48px}
+.qz-opt span{font-weight:500;font-size:11px;color:var(--ink-3)}
+.qz-opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.qz-opt.right{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.qz-opt.wrong{border-color:#c2410c;background:#fdeee7;color:#8a3b18}
+.qz-opt.dim{opacity:.5}
+.qz-fb{margin-top:12px;font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:10px}
+.qz-fb.ok{background:var(--ok-soft);color:var(--ok)}
+.qz-fb.no{background:#fdeee7;color:#8a3b18}
+
 </style>
 </head>
 <body data-theme="light">
@@ -679,7 +695,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v14.8.1</div>
+          <div class="bsub">Repertory workbench · v14.9</div>
         </div>
       </div>
       <label class="casebar">
@@ -1178,6 +1194,25 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     this.saveBoards();
     this.boardSwitch(id);
   };
+  U.boardToCase = async function (id) {
+    const b = this.boards.find(x => x.id === id);
+    if (!b) return;
+    let sel = (b.sel || []).slice();
+    if (!sel.length && this.s.sel.size) sel = [...this.s.sel];   // live selection, not yet synced
+    const n = sel.length + (b.rub || []).length;
+    if (!n) return this.toast('That board is empty');
+    const name = prompt('Patient or case name for this board:', b.name || 'Untitled case');
+    if (name === null) return;
+    const c = await H.Clinic.save({
+      name: name || b.name || 'Untitled case',
+      complaint: `${n} selected ${n === 1 ? 'item' : 'items'} from board “${b.name}”`,
+      selectedIds: sel,
+      mode: this.s.mode
+    });
+    this.toast(`Case saved — ${sel.length} symptom${sel.length === 1 ? '' : 's'} from “${b.name}”`);
+    if (c) setTimeout(() => this.showClinicDetail(c), 60);
+  };
+
   U.boardDelete = function (id) {
     if (this.boards.length < 2) { this.toast('Keep at least one board'); return; }
     const i = this.boards.findIndex(b => b.id === id);
@@ -1206,7 +1241,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const on = b.id === this.activeBoard;
       return `<button class="bd-chip ${on ? 'on' : ''}" data-board="${b.id}" aria-pressed="${on}">
         ${esc(b.name)}<span>${n}</span></button>`;
-    }).join('') + `<button class="bd-chip add" data-board-add="1" title="${this.t('addBoard')}">+</button>`;
+    }).join('') + `<button class="bd-chip add" data-board-add="1" title="${this.t('addBoard')}">+</button>` +
+      (this.boards.some(b => (b.sel || []).length || (b.rub || []).length)
+        ? `<button class="bd-chip tocase" data-board-case="1" title="Save the active board as a case">→ case</button>` : '');
   };
 
   const PACKNAME = {
@@ -1821,7 +1858,8 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       ['b-st', 'study', 'Study centre', 'SRS review, calendar, quizzes'],
       ['b-au', 'info', 'Data audit', 'Integrity and provenance check'],
       ['b-kb', 'tools', 'Keyboard shortcuts', 'Work faster'],
-      ['b-about', 'info', 'About & sources', 'Author, licence, data provenance']
+      ['b-about', 'info', 'About & sources', 'Author, licence, data provenance'],
+      ['b-qrub', 'study', 'Rare-rubric quiz', 'Which remedy does this two-remedy rubric separate?']
     ];
     $('md').innerHTML = `<div class="mh"><div><div class="mt">Tools</div><div class="msu">Everything outside the finder</div></div><button class="ib" id="mc">✕</button></div>
       <div class="mbd">
@@ -1843,6 +1881,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (bc) bc.addEventListener('click', () => this.boardCompare());
     document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
       this.cm();
+      if (b.dataset.tool === 'b-qrub') { setTimeout(() => this.qRubric(), 60); return; }
       const t = $(b.dataset.tool);
       if (t) setTimeout(() => t.click(), 60);
     }));
@@ -1875,6 +1914,8 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     document.querySelectorAll('[data-picker]').forEach(b => b.addEventListener('click', () => this.setPickerMode(b.dataset.picker)));
     const bb = $('boards');
     if (bb) bb.addEventListener('click', e => {
+      const toCase = e.target.closest('[data-board-case]');
+      if (toCase) { this.boardToCase(this.activeBoard); return; }
       const add = e.target.closest('[data-board-add]');
       if (add) { this.boardAdd(); return; }
       const c = e.target.closest('[data-board]');
@@ -2552,11 +2593,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   };
 
   /* ---------- printable case sheet ---------- */
-  U.printCase = async function (id) {
+  U.caseSheetHTML = async function (id) {
     const c = await H.Clinic.get(id);
-    if (!c) return this.toast('Case not found');
-    const host = document.getElementById('pc');
-    if (!host) return;
+    if (!c) return null;
     const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
     const date = new Date(c.date || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -2574,7 +2613,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       return `<div class="pc-q"><b>${esc(r.name)}</b> — <i>“${esc(String(r.quote).slice(0, 320))}”</i><br><span style="font-size:10px;color:#777">${esc(src)}</span></div>`;
     };
 
-    host.innerHTML = `
+    return `
       <h1>${esc(c.name || 'Untitled case')}</h1>
       <p class="pc-sub">Case summary · ${esc(date)} · ${esc((c.mode || 'acute'))} repertorisation</p>
       <div class="pc-grid">
@@ -2604,6 +2643,16 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         Remedy Finder ${H.U.appVersion || ''} · repertory data edition ${H.U.dataVersion ? H.U.dataVersion() : ''} · generated ${new Date().toLocaleString('en-IN')}<br>
         Grades from Repertorium Publicum (2008); materia medica quotations from public-domain sources. Educational tool — it ranks similarity and does not diagnose or prescribe.
       </div>`;
+  };
+
+  U.printCase = async function (id) {
+    const c = await H.Clinic.get(id);
+    if (!c) return this.toast('Case not found');
+    const host = document.getElementById('pc');
+    if (!host) return;
+    const html = await this.caseSheetHTML(id);
+    if (!html) return this.toast('Case not found');
+    host.innerHTML = html;
 
     document.body.classList.add('print-case');
     const t = document.title;
@@ -2615,6 +2664,101 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     };
     window.addEventListener('afterprint', done);
     setTimeout(() => window.print(), 120);
+  };
+
+
+  /* ---------- rare-rubric quiz ---------- */
+  U.qRubric = function () {
+    if (!window.HRF_RUB) return this.toast('The repertory is a separate file — use the full build for this quiz');
+    if (!this.rubIndex) this.parseRepertory();
+    const D = window.HRF_RUB;
+    const pool = [];
+    for (let i = 0; i < D.r.length; i++) {
+      const enc = D.r[i][1];
+      const n = enc.length / 2;
+      if (n === 2 || n === 3) pool.push(i);
+    }
+    if (!pool.length) return this.toast('No rare rubrics available');
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const r = this.rubric(pick);
+    const codes = Object.keys(r.g);
+    const correct = codes[Math.floor(Math.random() * codes.length)];
+    const opts = new Set([correct]);
+    const sameKingdom = Object.keys(H.DB.remedies).filter(c =>
+      c !== correct && (H.DB.remedies[c].group === H.DB.remedies[correct].group));
+    const others = Object.keys(H.DB.remedies).filter(c => c !== correct);
+    while (opts.size < 4) {
+      const src = Math.random() < 0.6 ? sameKingdom : others;
+      opts.add(src[Math.floor(Math.random() * src.length)]);
+    }
+    const list = [...opts].sort(() => Math.random() - 0.5);
+    const m = document.getElementById('md');
+    const render = (answered, chosen) => {
+      m.innerHTML = `<div class="mh"><div><div class="mt">Which remedy is characteristic here?</div>
+        <div class="msu">${r.p} · carried by ${codes.length} remedies</div></div><button class="ib" id="mc">✕</button></div>
+        <div class="mbd">
+          <div class="qz-rubric">${this.esc(r.p)}</div>
+          <div class="qz-opts">${list.map(c => {
+            const rem = H.DB.remedies[c] || {};
+            const isCorrect = c === correct;
+            const cls = answered ? (isCorrect ? 'right' : (c === chosen ? 'wrong' : 'dim')) : '';
+            return `<button class="qz-opt ${cls}" data-opt="${c}" ${answered ? 'disabled' : ''}>
+              ${this.esc(rem.name || c)}<span>${this.esc(rem.family || '')}</span></button>`;
+          }).join('')}</div>
+          ${answered ? `<div class="qz-fb ${chosen === correct ? 'ok' : 'no'}">
+            ${chosen === correct ? 'Correct' : 'Not this one'} — <b>${this.esc(H.DB.remedies[correct].name)}</b>, grade ${r.g[correct]} in this rubric.
+            ${codes.length === 2 ? 'A two-remedy rubric: it separates exactly two remedies.' : ''}
+          </div>
+          <div class="xm" style="margin-top:12px">
+            <button class="btn bp" id="qz-next">Next rubric</button>
+            <button class="btn bg" id="qz-open">Open the rubric</button>
+          </div>` : '<p class="srcl" style="margin-top:10px">Rare rubrics only — two or three remedies, the ones that discriminate.</p>'}
+        </div>`;
+      this.om();
+      document.getElementById('mc').onclick = () => this.cm();
+      if (!answered) {
+        m.querySelectorAll('[data-opt]').forEach(b => b.onclick = () => render(true, b.dataset.opt));
+      } else {
+        document.getElementById('qz-next').onclick = () => this.qRubric();
+        document.getElementById('qz-open').onclick = () => {
+          if (!this.rubSel) this.rubSel = new Set();
+          this.rubSel.add(pick);
+          this.cm();
+          this.setPickerMode('rubrics');
+          this.toast('Rubric added to the picture');
+        };
+      }
+    };
+    render(false, null);
+  };
+
+  /* ---------- case sheet download ---------- */
+  U.downloadCase = async function (id) {
+    const c = await H.Clinic.get(id);
+    if (!c) return this.toast('Case not found');
+    const body = await this.caseSheetHTML(id);
+    if (!body) return;
+    const css = `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;
+      max-width:760px;margin:32px auto;padding:0 20px;line-height:1.45}
+      h1{font-size:22px;margin:0 0 2px} .pc-sub{font-size:12px;color:#666;margin:0 0 18px}
+      .pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;margin-bottom:14px;font-size:12.5px}
+      h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#666;margin:18px 0 6px;
+        border-bottom:1px solid #ddd;padding-bottom:3px}
+      ol,ul{margin:0;padding-left:20px;font-size:12.5px;line-height:1.5}
+      table{width:100%;border-collapse:collapse;font-size:12.5px}
+      th,td{text-align:left;padding:4px 6px;border-bottom:1px solid #eee}
+      th{font-weight:600;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+      td.n{text-align:right} .pc-q{margin:10px 0;font-size:12.5px;line-height:1.55}
+      .pc-q i{color:#444} .pc-foot{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:10.5px;color:#777}
+      @media print{body{margin:0;max-width:none}@page{margin:16mm 14mm}}`;
+    const title = (c.name || 'Case').replace(/[<>&]/g, '');
+    const doc = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>${title} — Remedy Finder case sheet</title><style>${css}</style></head>
+      <body class="pc">${body}</body></html>`;
+    const fname = `case-${(c.name || 'sheet').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sheet'}.html`;
+    H.Ex.dl(fname, doc, 'text/html');
+    this.toast('Case sheet downloaded — open it, then print or save as PDF');
   };
 
   U.printOne = function (code) {
@@ -2719,10 +2863,12 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const bar = document.createElement('div');
       bar.className = 'xm';
       bar.style.marginTop = '10px';
-      bar.innerHTML = `<button class="btn bg btn-sm" data-print-case="${c.id}">Print case sheet</button>
+      bar.innerHTML = `<button class="btn bg btn-sm" data-print-case="${c.id}">Print</button>
+        <button class="btn bg btn-sm" data-dl-case="${c.id}">Download sheet</button>
         <button class="btn bg btn-sm" data-compare-case="${c.id}">Compare with…</button>`;
       mbd.appendChild(bar);
       bar.querySelector('[data-print-case]').onclick = () => this.printCase(c.id);
+      bar.querySelector('[data-dl-case]').onclick = () => this.downloadCase(c.id);
       bar.querySelector('[data-compare-case]').onclick = () => this.caseDiffPick(c.id);
     }
     mbd.querySelectorAll('.fu').forEach(el => {
@@ -2778,7 +2924,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '14.8.1';
+  U.appVersion = '14.9.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {

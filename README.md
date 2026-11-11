@@ -109,6 +109,9 @@ explicit durability layer:
 | **Background reminder** | Where the browser supports it, a periodic sync wakes the service worker, reads the backup age from IndexedDB and shows a notification. Off by default |
 | **Backup reminder** | A dismissible banner appears when records exist and the last backup is older than your chosen interval (3 / 7 / 30 days, or off). Re-checked when you return to the tab. |
 | **Keyboard picking** | Arrow keys move between rows, Home/End jump, Space or Enter toggles, focus stays on the row you just changed, and a live region announces the count |
+| **Case sheet download** | One case as a self-contained HTML file — open it anywhere, print it, or save as PDF |
+| **Board → case** | Turn the active board into a saved case, keeping its symptoms |
+| **Rare-rubric quiz** | Which remedy does this two- or three-remedy rubric separate? Four options, graded feedback, next question |
 | **Case comparison** | Two saved cases side by side: symptoms in both, added, dropped, and how the top twelve remedies moved between visits |
 | **Printable case sheet** | One page per case: patient header, complaint, notes, symptoms with chapter and frequency, top ten remedies with scores, and quotations for the top three, with the data edition and a disclaimer in the footer |
 | **Transfer codes** | Move one case, or several, between devices as an encrypted text code (PIN-protected) — copy it, save it as a file, or **show it as a QR** for a phone camera to read. No network, no account |
