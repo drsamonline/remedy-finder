@@ -11,6 +11,7 @@ ui = (site / 'assets/ui.js').read_text(encoding='utf-8')
 i18n = (site / 'assets/i18n.js').read_text(encoding='utf-8')
 offl = (site / 'assets/offline.js').read_text(encoding='utf-8')
 packs = (site / 'assets/packs.js').read_text(encoding='utf-8')
+vault = (site / 'assets/vault.js').read_text(encoding='utf-8')
 icon = (site / 'assets/icon.svg').read_text(encoding='utf-8')
 
 html = html.replace('<link rel="stylesheet" href="assets/app.css"/>', '<style>\n' + css + '\n</style>')
@@ -24,6 +25,7 @@ html = html.replace('<script src="assets/app.js"></script>', '<script>\n' + app 
 html = html.replace('<script src="assets/ui.js"></script>', '<script>\n' + ui + '\n</script>')
 html = html.replace('<script src="assets/offline.js"></script>', '<script>\n' + offl + '\n</script>')
 html = html.replace('<script src="assets/packs.js"></script>', '<script>\n' + packs + '\n</script>')
+html = html.replace('<script src="assets/vault.js"></script>', '<script>\n' + vault + '\n</script>')
 # no service worker in the single-file build
 html = re.sub(r"<script>\s*if \('serviceWorker' in navigator.*?</script>", '', html, flags=re.S)
 html = html.replace('<title>Remedy Finder — Homeopathic Repertory Workbench</title>',

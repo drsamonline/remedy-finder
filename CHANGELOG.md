@@ -1,5 +1,24 @@
 # Changelog
 
+## 13.10.0 — 2026-11-11
+
+Encryption at rest. The last piece of the offline story: a stolen device should not be
+a data breach.
+
+### Added
+- **Vault.** Optional passphrase; clinic cases, saved repertorisations and packs are
+  written to IndexedDB as AES‑256‑GCM ciphertext, with the key derived by PBKDF2
+  (150,000 rounds) and held in memory only.
+- **Transparent layer.** Encryption happens inside `H.IDB.put/get/all`, so every existing
+  feature — cases, packs, backups, exports — keeps working unchanged, and legacy plain
+  rows are still readable during the switch.
+- **Lock screen.** When a vault exists the app boots locked; nothing renders until the
+  passphrase (or recovery key) is entered. A wrong passphrase is rejected by the canary.
+- **Recovery key.** The raw 256‑bit key, shown once at setup as 52 base32 characters,
+  copyable or saved to a text file. It unlocks the vault if the passphrase is lost.
+- **Turn off.** Entering the passphrase decrypts every record back to plain JSON and
+  removes the vault.
+
 ## 13.9.0 — 2026-11-11
 
 Extensibility without a server.

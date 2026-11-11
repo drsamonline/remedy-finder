@@ -505,6 +505,23 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
 .offgrid>*:nth-last-child(-n+2)>*{border-bottom:none}
 @media (max-width:520px){.offgrid{grid-template-columns:1fr auto}}
 
+/* ---------------- vault ---------------- */
+.vault-lock{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px;
+ background:var(--paper);background-image:radial-gradient(circle at 50% 0%,var(--accent-soft),transparent 60%)}
+.vault-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-l);padding:26px 24px;box-shadow:var(--sh-3);text-align:center}
+.vault-mark{width:46px;height:46px;border-radius:13px;margin:0 auto 14px;display:grid;place-items:center;
+ background:linear-gradient(150deg,var(--accent),var(--accent-2));color:#fff;font-size:21px}
+.vault-card h2{font-size:18px;margin:0 0 6px}
+.vault-card p{font-size:13px;color:var(--ink-2);margin:0 0 16px;line-height:1.55}
+.vault-card input{width:100%;height:46px;border-radius:11px;border:1px solid var(--line-2);background:var(--paper);
+ padding:0 12px;font-size:14px;margin-bottom:12px;text-align:center;letter-spacing:.02em}
+.vault-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vault-note{font-size:11.5px;color:var(--gold);min-height:16px;margin:10px 0 0}
+.recovery-key{font-family:var(--mono);font-size:14px;letter-spacing:.14em;line-height:1.9;background:var(--gold-soft);
+ border:1px solid color-mix(in srgb,var(--gold) 30%,transparent);color:var(--gold);border-radius:11px;padding:14px;
+ text-align:center;word-break:break-word;font-weight:700}
+
 /* ---------------- print ---------------- */
 .ph{display:none}
 @media print{
