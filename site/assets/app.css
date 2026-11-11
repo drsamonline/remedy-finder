@@ -479,6 +479,26 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .pinbar{display:none}
 }
 
+/* ---------------- explorer ---------------- */
+.xc{cursor:grab;overflow:hidden;background:var(--paper)}
+.xleg{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:6px 12px;font-size:11px;color:var(--ink-2);
+ border-top:1px solid var(--line);background:var(--surface)}
+.xleg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.xleg .ln{display:inline-block;width:16px;height:0;border-top:2px solid #b9c2c9;vertical-align:middle;margin-right:5px}
+.xleg .ln.dash{border-top-style:dashed}
+
+/* ---------------- thermal ---------------- */
+.thermal{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;border-radius:11px;padding:8px 11px;margin-bottom:12px;
+ font-size:11.5px;border:1px solid var(--line)}
+.thermal.cold{background:#e8f1fb;border-color:#c5d9ef;color:#1d4e79}
+.thermal.hot{background:#fdeee7;border-color:#f3cdbc;color:#8a3b18}
+.thermal.mixed{background:var(--surface-2);border-color:var(--line-2);color:var(--ink-2)}
+.th-label{font-weight:800;letter-spacing:.02em;text-transform:uppercase;font-size:10.5px}
+.th-ev{color:inherit;opacity:.85}
+.th-ev b{font-weight:800}
+.th-note{margin-left:auto;font-size:10.5px;opacity:.7;white-space:nowrap}
+@media print{.thermal{display:none}}
+
 /* ---------------- rubric filter ---------------- */
 .rubbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .rubcount{font-size:11.5px;color:var(--ink-3);flex:1}

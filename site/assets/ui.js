@@ -780,6 +780,14 @@
   /* ---------- bindings ---------- */
   U.be = function () {
     if (this._bound) return;
+    try {
+      H.Exp = {
+        open: () => U.expOpen(), close: () => U.expClose(),
+        render: () => U.expRender(), bind: () => U.expBind(),
+        build: () => { U.expBuild(); U.exp.built = true; },
+        get nodes() { return U.exp.nodes; }, get edges() { return U.exp.edges; }
+      };
+    } catch (e) {}
     this._bound = true;
 
     const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
@@ -935,6 +943,23 @@
         if (h && src1.n) h.textContent = `Source text — ${src1.n} ${src1.era || ''}`;
       }
     }
+    // thermal tendency, derived from thermal modalities
+    const th = window.HRF_THERM && window.HRF_THERM[code];
+    if (th && !document.querySelector('#md .thermal')) {
+      const mbd0 = document.querySelector('#md .mbd');
+      if (mbd0) {
+        const label = th.t === 'chilly' ? 'Chilly patient' : th.t === 'hot' ? 'Hot patient' : 'Mixed thermal';
+        const cls = th.t === 'chilly' ? 'cold' : th.t === 'hot' ? 'hot' : 'mixed';
+        const ev = th.ev.map(([rub, g]) => `${this.esc(rub.replace(/ › /g, ' › '))} <b>${g}</b>`).join(' · ');
+        const box = document.createElement('div');
+        box.className = 'thermal ' + cls;
+        box.innerHTML = `<span class="th-label">${label}</span>
+          <span class="th-ev">from thermal modalities — ${ev}</span>
+          <span class="th-note">cold ${th.c} · heat ${th.h} grade points</span>`;
+        mbd0.insertBefore(box, mbd0.firstChild);
+      }
+    }
+
     const hdr = document.querySelector('#md .mh');
     if (hdr && !hdr.querySelector('[data-print-one]')) {
       const b = document.createElement('button');
@@ -985,6 +1010,241 @@
     const p = $('ab-prov'); if (p) p.onclick = () => { this.cm(); setTimeout(() => this.provenancePanel(), 60); };
     const l = $('ab-lic'); if (l) l.onclick = () => { this.cm(); setTimeout(() => this.provenancePanel(), 60); };
   };
+
+
+  /* ---------- remedy explorer (force layout, labelled, filterable) ---------- */
+  U.exp = { nodes: [], edges: [], zoom: 1, panX: 0, panY: 0, drag: false, lx: 0, ly: 0,
+    group: '', thermal: '', q: '', hover: null, built: false };
+
+  U.expOpen = function () {
+    const host = $('xo');
+    if (!host) return;
+    host.classList.add('open');
+    if (!this.exp.built) { this.expBuild(); this.exp.built = true; }
+    this.expBind();
+    this.expRender();
+  };
+
+  U.expBuild = function () {
+    const R = H.DB.remedies, E = this.exp;
+    const codes = Object.keys(R);
+    E.nodes = codes.map(code => {
+      const r = R[code];
+      const rel = r.relationships || {};
+      const deg = (rel.comp || []).length + (rel.antid || []).length + (rel.follows || []).length;
+      return { code, name: r.name, group: r.group || 'plant', family: r.family || 'Other', deg };
+    });
+    const byCode = {}; E.nodes.forEach(n => byCode[n.code] = n);
+    E.edges = [];
+    codes.forEach(code => {
+      const rel = R[code].relationships || {};
+      (rel.comp || []).forEach(t => { if (byCode[t]) E.edges.push({ a: code, b: t, t: 'comp' }); });
+      (rel.antid || []).forEach(t => { if (byCode[t]) E.edges.push({ a: code, b: t, t: 'antid' }); });
+      (rel.follows || []).forEach(t => { if (byCode[t]) E.edges.push({ a: code, b: t, t: 'follows' }); });
+    });
+    // deterministic start: circle grouped by family
+    const fams = [...new Set(E.nodes.map(n => n.family))].sort();
+    const famAngle = {}; fams.forEach((f, i) => famAngle[f] = (i / fams.length) * Math.PI * 2);
+    const perFam = {}; E.nodes.forEach(n => perFam[n.family] = (perFam[n.family] || 0) + 1);
+    const seen = {};
+    const W = 1200, Hh = 800;
+    E.nodes.forEach(n => {
+      seen[n.family] = (seen[n.family] || 0) + 1;
+      const a = famAngle[n.family] + (seen[n.family] / perFam[n.family]) * 0.9;
+      const rad = 120 + (perFam[n.family] / E.nodes.length) * 420 + (seen[n.family] % 3) * 40;
+      n.x = W / 2 + Math.cos(a) * rad;
+      n.y = Hh / 2 + Math.sin(a) * rad;
+      n.vx = 0; n.vy = 0;
+    });
+    // force relaxation
+    const idx = {}; E.nodes.forEach(n => idx[n.code] = n);
+    const N = E.nodes.length;
+    for (let it = 0; it < 300; it++) {
+      const cool = 1 - it / 340;
+      for (let i = 0; i < N; i++) {
+        const a = E.nodes[i];
+        for (let j = i + 1; j < N; j++) {
+          const b = E.nodes[j];
+          let dx = a.x - b.x, dy = a.y - b.y;
+          let d2 = dx * dx + dy * dy || 0.01;
+          if (d2 > 160000) continue;
+          const f = 2600 / d2;
+          const d = Math.sqrt(d2);
+          dx /= d; dy /= d;
+          a.vx += dx * f; a.vy += dy * f;
+          b.vx -= dx * f; b.vy -= dy * f;
+        }
+      }
+      E.edges.forEach(e => {
+        const a = idx[e.a], b = idx[e.b];
+        if (!a || !b) return;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        const f = (d - 115) * 0.010;
+        a.vx += (dx / d) * f; a.vy += (dy / d) * f;
+        b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
+      });
+      E.nodes.forEach(n => {
+        n.vx += (W / 2 - n.x) * 0.0016;
+        n.vy += (Hh / 2 - n.y) * 0.0016;
+        n.x += Math.max(-12, Math.min(12, n.vx * cool));
+        n.y += Math.max(-12, Math.min(12, n.vy * cool));
+        n.vx *= 0.72; n.vy *= 0.72;
+      });
+    }
+    // fit the relaxed layout into the viewport with a margin
+    const xs = E.nodes.map(n => n.x), ys = E.nodes.map(n => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const pad = 70, availW = 1200 - pad * 2, availH = 800 - pad * 2;
+    const sx = availW / Math.max(1, maxX - minX), sy = availH / Math.max(1, maxY - minY);
+    const s = Math.min(sx, sy);
+    const ox = pad + (availW - (maxX - minX) * s) / 2, oy = pad + (availH - (maxY - minY) * s) / 2;
+    E.nodes.forEach(n => {
+      n.x = ox + (n.x - minX) * s;
+      n.y = oy + (n.y - minY) * s;
+      n.r = 4 + Math.min(7, n.deg * 0.7);
+    });
+  };
+
+  U.expVisible = function () {
+    const E = this.exp, q = (E.q || '').toLowerCase();
+    const out = E.nodes.filter(n => {
+      if (E.group && n.group !== E.group) return false;
+      if (E.thermal) {
+        const th = (window.HRF_THERM || {})[n.code];
+        const t = th ? th.t : 'none';
+        if (E.thermal === 'none' ? t !== 'none' : t !== E.thermal) return false;
+      }
+      if (q && !n.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    return out;
+  };
+
+  U.expRender = function () {
+    const E = this.exp, host = $('x-ca');
+    if (!host) return;
+    const W = host.clientWidth || 1200, Hh = host.clientHeight || 800;
+    const vis = this.expVisible();
+    const visSet = new Set(vis.map(n => n.code));
+    const nbr = new Set();
+    if (E.hover) E.edges.forEach(e => {
+      if (e.a === E.hover) nbr.add(e.b);
+      if (e.b === E.hover) nbr.add(e.a);
+    });
+    const cols = { plant: '#0f766e', mineral: '#6366f1', animal: '#dc2626', nosode: '#7c3aed', metal: '#d97706' };
+    const byCode = {}; E.nodes.forEach(n => byCode[n.code] = n);
+    let svg = `<svg width="${W}" height="${Hh}" xmlns="http://www.w3.org/2000/svg">`;
+    svg += `<g transform="translate(${E.panX},${E.panY}) scale(${E.zoom})">`;
+    svg += E.edges.filter(e => visSet.has(e.a) && visSet.has(e.b)).map(e => {
+      const a = byCode[e.a], b = byCode[e.b];
+      if (!a || !b) return '';
+      const hot = E.hover && (e.a === E.hover || e.b === E.hover);
+      const dash = e.t === 'antid' ? ' stroke-dasharray="3 3"' : (e.t === 'follows' ? ' stroke-dasharray="1 3"' : '');
+      return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"
+        stroke="${hot ? '#0f766e' : '#b9c2c9'}" stroke-width="${hot ? 1.4 : 0.6}" opacity="${hot ? 0.9 : 0.35}"${dash}/>`;
+    }).join('');
+    svg += vis.map(n => {
+      const dim = E.hover && E.hover !== n.code && !nbr.has(n.code);
+      const fill = cols[n.group] || '#0f766e';
+      return `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${n.r}" fill="${fill}"
+        opacity="${dim ? 0.18 : 1}" stroke="${E.hover === n.code ? '#111' : 'none'}" stroke-width="1.5"/>`;
+    }).join('');
+    // labels — biggest first, skip collisions
+    const boxes = [];
+    const fits = (x, y, w, h) => {
+      for (const b of boxes) if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return false;
+      boxes.push({ x, y, w, h });
+      return true;
+    };
+    const order = vis.slice().sort((a, b) => b.deg - a.deg);
+    let shown = 0;
+    const labels = order.map(n => {
+      const txt = n.name;
+      const zf = Math.max(0.5, Math.min(3, E.zoom));
+      const w = (txt.length * 5.4 + 2) / zf, h = 12 / zf;
+      const x = n.x + n.r + 3, y = n.y - 5;
+      const important = E.hover === n.code || nbr.has(n.code);
+      if (!fits(x - 2, y - 2, w + 4, h + 4) && !important) return '';
+      shown++;
+      const dim = E.hover && E.hover !== n.code && !nbr.has(n.code);
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="9.5"
+        fill="${dim ? '#9aa4ac' : '#2b3238'}" font-weight="${E.hover === n.code ? 700 : 500}">${this.esc(txt)}</text>`;
+    }).join('');
+    svg += labels + '</g></svg>';
+    host.innerHTML = svg;
+    const info = $('x-in');
+    if (info) info.textContent = `${vis.length} of ${E.nodes.length} remedies · ${shown} labelled · ${E.edges.length} relationships`;
+  };
+
+  U.expBind = function () {
+    const E = this.exp, cv = $('x-ca');
+    if (!cv || cv.dataset.bound) { this.expWire(); return; }
+    cv.dataset.bound = '1';
+    cv.addEventListener('wheel', e => {
+      e.preventDefault();
+      const rect = cv.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const k = e.deltaY > 0 ? 0.88 : 1.14;
+      const nz = Math.max(0.25, Math.min(6, E.zoom * k));
+      E.panX = mx - (mx - E.panX) * (nz / E.zoom);
+      E.panY = my - (my - E.panY) * (nz / E.zoom);
+      E.zoom = nz;
+      this.expRender();
+    }, { passive: false });
+    cv.addEventListener('mousedown', e => { E.drag = true; E.lx = e.clientX; E.ly = e.clientY; cv.style.cursor = 'grabbing'; });
+    window.addEventListener('mousemove', e => {
+      if (!E.drag) return;
+      E.panX += e.clientX - E.lx; E.panY += e.clientY - E.ly;
+      E.lx = e.clientX; E.ly = e.clientY;
+      this.expRender();
+    });
+    window.addEventListener('mouseup', () => { if (E.drag) { E.drag = false; cv.style.cursor = 'grab'; } });
+    cv.addEventListener('mousemove', e => {
+      if (E.drag) return;
+      const g = e.target.closest('circle');
+      const code = g ? (this.expVisible().find(n => Math.abs(n.x * E.zoom + E.panX - (e.clientX - cv.getBoundingClientRect().left)) < 8) || {}).code : null;
+      this.expHoverFromTarget(e, cv);
+    });
+    cv.addEventListener('click', e => {
+      const code = cv.dataset.hoverCode;
+      if (code) { this.expClose(); this.showDetail(code); }
+    });
+    this.expWire();
+  };
+
+  U.expHoverFromTarget = function (e, cv) {
+    const E = this.exp;
+    const rect = cv.getBoundingClientRect();
+    const mx = (e.clientX - rect.left - E.panX) / E.zoom;
+    const my = (e.clientY - rect.top - E.panY) / E.zoom;
+    let best = null, bd = 1e9;
+    this.expVisible().forEach(n => {
+      const d = (n.x - mx) ** 2 + (n.y - my) ** 2;
+      if (d < bd) { bd = d; best = n; }
+    });
+    const hit = best && bd <= (best.r + 5) ** 2 ? best.code : null;
+    cv.dataset.hoverCode = hit || '';
+    if (hit !== E.hover) { E.hover = hit; this.expRender(); }
+  };
+
+  U.expWire = function () {
+    const E = this.exp;
+    const on = (id, fn) => { const el = $(id); if (el && !el.dataset.w) { el.dataset.w = '1'; el.addEventListener('click', fn); } };
+    on('x-cl', () => this.expClose());
+    on('x-zi', () => { E.zoom = Math.min(6, E.zoom * 1.25); this.expRender(); });
+    on('x-zo', () => { E.zoom = Math.max(0.25, E.zoom / 1.25); this.expRender(); });
+    on('x-re', () => { E.zoom = 1; E.panX = 0; E.panY = 0; E.group = ''; E.thermal = ''; E.q = ''; E.hover = null;
+      const g = $('x-gr'); if (g) g.value = ''; const s = $('x-se'); if (s) s.value = ''; const t = $('x-th'); if (t) t.value = ''; this.expRender(); });
+    const se = $('x-se');
+    if (se && !se.dataset.w) { se.dataset.w = '1'; se.addEventListener('input', e => { E.q = e.target.value; this.expRender(); }); }
+    const gr = $('x-gr');
+    if (gr && !gr.dataset.w) { gr.dataset.w = '1'; gr.addEventListener('change', e => { E.group = e.target.value; this.expRender(); }); }
+    const th = $('x-th');
+    if (th && !th.dataset.w) { th.dataset.w = '1'; th.addEventListener('change', e => { E.thermal = e.target.value; this.expRender(); }); }
+  };
+
+  U.expClose = function () { const h = $('xo'); if (h) h.classList.remove('open'); this.exp.hover = null; };
 
   /* ---------- sources & provenance ---------- */
   U.provenancePanel = function () {

@@ -1,5 +1,36 @@
 # Changelog
 
+## 14.7.0 — 2026-11-11
+
+The explorer was a hairball, and thermals were missing entirely.
+
+### Fixed — remedy explorer
+- **Layout.** Replaced the radial family rings, which piled 297 labels on top of each
+  other, with a force-directed layout: repulsion, relationship springs, centre gravity,
+  then fitted to the viewport.
+- **Labels.** Drawn greedily by relationship count and skipped when they would collide —
+  measured overlap is now **zero**. Density scales with zoom: 110 labels at 1×, 214 at
+  2.2×.
+- **Zoom and pan.** The old viewBox maths mixed screen pixels with viewBox units; it is
+  now a single `<g transform>`, so panning tracks the cursor at any zoom.
+- **Legend** for kingdom colours and relationship line types, plus a live count of what
+  is on screen.
+- **Hover** isolates a remedy and its neighbours; click opens the monograph.
+- **Filters**: kingdom and thermal, plus search, all without moving the layout.
+
+### Added — thermals
+- **Thermal tendency** per remedy: chilly, hot or mixed, derived from the thermal
+  *modality* rubrics — cold agg, warm agg, warm room/bed/stove agg, warm amel, cold
+  bathing amel — with the contributing rubrics and grades shown under the chip.
+- Shown on the monograph and filterable in the explorer. 135 of 297 remedies carry
+  evidence; the other 162 say nothing rather than guessing.
+- Spot checks match the classics: Nux-v, Calc, Ars, Sil, Hep, Rhus-t, Lyc, Ign, Cham,
+  Bell, Acon chilly; Puls, Nat-m, Merc hot.
+
+### Notes
+- This is a derived classification from modalities, labelled as such in the app. It is
+  not a constitutional thermal table, and it does not claim to be.
+
 ## 14.6.0 — 2026-11-11
 
 Saying plainly what is in the app, and what is not.

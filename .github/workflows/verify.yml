@@ -22,6 +22,7 @@ jobs:
           node --check site/assets/packs.js
           node --check site/assets/vault.js
           node --check site/assets/qr.js
+          node --check site/assets/therm.js
           node --check site/sw.js
           node --check site/assets/data.js
           node --check site/assets/i18n.js

@@ -52,7 +52,7 @@
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v14.6</div>
+          <div class="bsub">Repertory workbench · v14.7</div>
         </div>
       </div>
       <label class="casebar">
@@ -134,6 +134,13 @@
   <div class="xt">
     <button class="btn bg" id="x-cl">✕ Close</button>
     <input type="search" id="x-se" placeholder="Search remedy…" aria-label="Search remedy"/>
+    <select id="x-th" aria-label="Thermal filter">
+      <option value="">Any thermal</option>
+      <option value="chilly">Chilly patient</option>
+      <option value="hot">Hot patient</option>
+      <option value="mixed">Mixed</option>
+      <option value="none">Not stated</option>
+    </select>
     <select id="x-gr" aria-label="Kingdom filter">
       <option value="">All kingdoms</option><option value="plant">Plant</option><option value="mineral">Mineral</option>
       <option value="animal">Animal</option><option value="nosode">Nosode</option><option value="metal">Metal</option>
@@ -144,6 +151,16 @@
     <span id="x-in" style="font-size:11px;color:var(--ink-2)">Scroll to zoom · drag to pan · click a node</span>
   </div>
   <div class="xc" id="x-ca"></div>
+  <div class="xleg">
+    <span><i style="background:#0f766e"></i>Plant</span>
+    <span><i style="background:#6366f1"></i>Mineral</span>
+    <span><i style="background:#dc2626"></i>Animal</span>
+    <span><i style="background:#7c3aed"></i>Nosode</span>
+    <span><i style="background:#d97706"></i>Metal</span>
+    <span><span class="ln"></span>complementary</span>
+    <span><span class="ln dash"></span>antidote / follows</span>
+    <span style="margin-left:auto">node size = relationship count</span>
+  </div>
 </div>
 
 <div id="legacy-actions" hidden>
@@ -154,6 +171,7 @@
 
 <script src="assets/i18n.js"></script>
 <script src="assets/data.js"></script>
+<script src="assets/therm.js"></script>
 <script src="assets/app.js"></script>
 <script src="assets/ui.js"></script>
 <script src="assets/offline.js"></script>
