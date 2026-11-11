@@ -1020,13 +1020,31 @@
     const host = $('xo');
     if (!host) return;
     host.classList.add('open');
-    if (!this.exp.built) { this.expBuild(); this.exp.built = true; }
+    this.expFit(true);
     this.expBind();
     this.expRender();
   };
 
-  U.expBuild = function () {
+  U.expSize = function () {
+    const cv = $('x-ca');
+    return { w: Math.max(280, (cv && cv.clientWidth) || 360), h: Math.max(280, (cv && cv.clientHeight) || 480) };
+  };
+
+  /* rebuild the layout when the canvas size changes (first open, rotate, resize) */
+  U.expFit = function (force) {
+    const { w, h } = this.expSize();
+    const E = this.exp;
+    if (!force && E.built && Math.abs((E.w || 0) - w) < 24 && Math.abs((E.h || 0) - h) < 24) return;
+    E.w = w; E.h = h;
+    this.expBuild(w, h);
+    E.built = true;
+    E.zoom = 1; E.panX = 0; E.panY = 0;
+  };
+
+  U.expBuild = function (W, Hh) {
     const R = H.DB.remedies, E = this.exp;
+    W = W || 1200; Hh = Hh || 800;
+    E.W = W; E.H = Hh;
     const codes = Object.keys(R);
     E.nodes = codes.map(code => {
       const r = R[code];
@@ -1047,7 +1065,6 @@
     const famAngle = {}; fams.forEach((f, i) => famAngle[f] = (i / fams.length) * Math.PI * 2);
     const perFam = {}; E.nodes.forEach(n => perFam[n.family] = (perFam[n.family] || 0) + 1);
     const seen = {};
-    const W = 1200, Hh = 800;
     E.nodes.forEach(n => {
       seen[n.family] = (seen[n.family] || 0) + 1;
       const a = famAngle[n.family] + (seen[n.family] / perFam[n.family]) * 0.9;
@@ -1059,8 +1076,10 @@
     // force relaxation
     const idx = {}; E.nodes.forEach(n => idx[n.code] = n);
     const N = E.nodes.length;
-    for (let it = 0; it < 300; it++) {
-      const cool = 1 - it / 340;
+    const compact = Math.max(1, Math.min(3.4, 1200 / Math.min(W, Hh)));
+    const REP = 3600 * compact;
+    for (let it = 0; it < 380; it++) {
+      const cool = 1 - it / 420;
       for (let i = 0; i < N; i++) {
         const a = E.nodes[i];
         for (let j = i + 1; j < N; j++) {
@@ -1068,7 +1087,7 @@
           let dx = a.x - b.x, dy = a.y - b.y;
           let d2 = dx * dx + dy * dy || 0.01;
           if (d2 > 160000) continue;
-          const f = 2600 / d2;
+          const f = REP / d2;
           const d = Math.sqrt(d2);
           dx /= d; dy /= d;
           a.vx += dx * f; a.vy += dy * f;
@@ -1080,7 +1099,7 @@
         if (!a || !b) return;
         const dx = b.x - a.x, dy = b.y - a.y;
         const d = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        const f = (d - 115) * 0.010;
+        const f = (d - (compact > 1.8 ? 55 : 115)) * 0.010;
         a.vx += (dx / d) * f; a.vy += (dy / d) * f;
         b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
       });
@@ -1095,14 +1114,16 @@
     // fit the relaxed layout into the viewport with a margin
     const xs = E.nodes.map(n => n.x), ys = E.nodes.map(n => n.y);
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-    const pad = 70, availW = 1200 - pad * 2, availH = 800 - pad * 2;
+    const pad = Math.max(26, Math.min(70, Math.round(Math.min(W, Hh) * 0.09)));
+    const availW = W - pad * 2, availH = Hh - pad * 2;
     const sx = availW / Math.max(1, maxX - minX), sy = availH / Math.max(1, maxY - minY);
     const s = Math.min(sx, sy);
     const ox = pad + (availW - (maxX - minX) * s) / 2, oy = pad + (availH - (maxY - minY) * s) / 2;
     E.nodes.forEach(n => {
       n.x = ox + (n.x - minX) * s;
       n.y = oy + (n.y - minY) * s;
-      n.r = 4 + Math.min(7, n.deg * 0.7);
+      const small = Math.min(W, Hh) < 620;
+      n.r = (small ? 3.2 : 4) + Math.min(small ? 4.5 : 7, n.deg * (small ? 0.5 : 0.7));
     });
   };
 
@@ -1150,10 +1171,14 @@
       return `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${n.r}" fill="${fill}"
         opacity="${dim ? 0.18 : 1}" stroke="${E.hover === n.code ? '#111' : 'none'}" stroke-width="1.5"/>`;
     }).join('');
-    // labels — biggest first, skip collisions
+    // labels — avoid other labels AND other nodes
     const boxes = [];
-    const fits = (x, y, w, h) => {
-      for (const b of boxes) if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return false;
+    const nodeBoxes = vis.map(n => ({ x: n.x - n.r - 2, y: n.y - n.r - 2, w: n.r * 2 + 4, h: n.r * 2 + 4, code: n.code }));
+    const hit = (b, x, y, w, h) => x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y;
+    const avoidNodes = Math.min(W, Hh) >= 620;   // small screens: halo instead, keeps density up
+    const fits = (x, y, w, h, own) => {
+      for (const b of boxes) if (hit(b, x, y, w, h)) return false;
+      if (avoidNodes) for (const b of nodeBoxes) if (b.code !== own && hit(b, x, y, w, h)) return false;
       boxes.push({ x, y, w, h });
       return true;
     };
@@ -1162,14 +1187,30 @@
     const labels = order.map(n => {
       const txt = n.name;
       const zf = Math.max(0.5, Math.min(3, E.zoom));
-      const w = (txt.length * 5.4 + 2) / zf, h = 12 / zf;
-      const x = n.x + n.r + 3, y = n.y - 5;
+      const fs = Math.min(W, Hh) < 620 ? 11 : 9.5;
+      const w = (txt.length * fs * 0.60 + 2) / zf, h = (fs + 3) / zf;
       const important = E.hover === n.code || nbr.has(n.code);
-      if (!fits(x - 2, y - 2, w + 4, h + 4) && !important) return '';
+      const gap = (n.r + 3) / zf;
+      const cands = [
+        { x: n.x + gap, y: n.y - h / 2, anchor: 'start' },
+        { x: n.x - gap - w, y: n.y - h / 2, anchor: 'start' },
+        { x: n.x - w / 2, y: n.y - gap - h, anchor: 'start' },
+        { x: n.x - w / 2, y: n.y + gap, anchor: 'start' }
+      ];
+      let spot = null;
+      for (const c of cands) {
+        if (c.x < 4 || c.x + w > W - 4 || c.y < 2 || c.y + h > Hh - 2) continue;
+        if (fits(c.x, c.y, w, h, n.code)) { spot = c; break; }
+      }
+      if (!spot) {
+        if (!important) return '';
+        spot = cands[0];
+      }
       shown++;
       const dim = E.hover && E.hover !== n.code && !nbr.has(n.code);
-      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="9.5"
-        fill="${dim ? '#9aa4ac' : '#2b3238'}" font-weight="${E.hover === n.code ? 700 : 500}">${this.esc(txt)}</text>`;
+      return `<text x="${spot.x.toFixed(1)}" y="${(spot.y + h * 0.78).toFixed(1)}" font-size="${fs}"
+        fill="${dim ? '#9aa4ac' : '#2b3238'}" font-weight="${E.hover === n.code ? 700 : 500}"
+        stroke="#fff" stroke-width="${avoidNodes ? 2 : 2.8}" paint-order="stroke" stroke-linejoin="round">${this.esc(txt)}</text>`;
     }).join('');
     svg += labels + '</g></svg>';
     host.innerHTML = svg;
@@ -1179,38 +1220,114 @@
 
   U.expBind = function () {
     const E = this.exp, cv = $('x-ca');
-    if (!cv || cv.dataset.bound) { this.expWire(); return; }
+    if (!cv) { this.expWire(); return; }
+    if (cv.dataset.bound) { this.expWire(); return; }
     cv.dataset.bound = '1';
-    cv.addEventListener('wheel', e => {
-      e.preventDefault();
-      const rect = cv.getBoundingClientRect();
-      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      const k = e.deltaY > 0 ? 0.88 : 1.14;
-      const nz = Math.max(0.25, Math.min(6, E.zoom * k));
+    const pts = new Map();
+    let pinchStart = null, tapStart = null;
+
+    const local = e => {
+      const r = cv.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const zoomAt = (mx, my, k) => {
+      const nz = Math.max(0.25, Math.min(8, E.zoom * k));
       E.panX = mx - (mx - E.panX) * (nz / E.zoom);
       E.panY = my - (my - E.panY) * (nz / E.zoom);
       E.zoom = nz;
+    };
+
+    cv.addEventListener('wheel', e => {
+      e.preventDefault();
+      const p = local(e);
+      zoomAt(p.x, p.y, e.deltaY > 0 ? 0.88 : 1.14);
       this.expRender();
     }, { passive: false });
-    cv.addEventListener('mousedown', e => { E.drag = true; E.lx = e.clientX; E.ly = e.clientY; cv.style.cursor = 'grabbing'; });
-    window.addEventListener('mousemove', e => {
-      if (!E.drag) return;
-      E.panX += e.clientX - E.lx; E.panY += e.clientY - E.ly;
-      E.lx = e.clientX; E.ly = e.clientY;
-      this.expRender();
+
+    cv.addEventListener('pointerdown', e => {
+      try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+      const p = local(e);
+      pts.set(e.pointerId, p);
+      if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        pinchStart = { d: Math.hypot(a.x - b.x, a.y - b.y), zoom: E.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+      } else {
+        tapStart = { t: Date.now(), x: p.x, y: p.y, moved: 0 };
+        E.drag = true; E.lx = e.clientX; E.ly = e.clientY;
+        cv.style.cursor = 'grabbing';
+      }
     });
-    window.addEventListener('mouseup', () => { if (E.drag) { E.drag = false; cv.style.cursor = 'grab'; } });
-    cv.addEventListener('mousemove', e => {
-      if (E.drag) return;
-      const g = e.target.closest('circle');
-      const code = g ? (this.expVisible().find(n => Math.abs(n.x * E.zoom + E.panX - (e.clientX - cv.getBoundingClientRect().left)) < 8) || {}).code : null;
-      this.expHoverFromTarget(e, cv);
+
+    cv.addEventListener('pointermove', e => {
+      const p = local(e);
+      if (pts.has(e.pointerId)) pts.set(e.pointerId, p);
+      if (pts.size === 2 && pinchStart) {
+        const [a, b] = [...pts.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        const target = pinchStart.zoom * (d / Math.max(1, pinchStart.d));
+        const k = target / E.zoom;
+        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, k);
+        this.expRender();
+        return;
+      }
+      if (E.drag && pts.size === 1) {
+        const dx = e.clientX - E.lx, dy = e.clientY - E.ly;
+        if (tapStart) tapStart.moved += Math.abs(dx) + Math.abs(dy);
+        E.panX += dx; E.panY += dy;
+        E.lx = e.clientX; E.ly = e.clientY;
+        this.expRender();
+        return;
+      }
+      if (e.pointerType === 'mouse') this.expHoverFromTarget(e, cv);
     });
-    cv.addEventListener('click', e => {
-      const code = cv.dataset.hoverCode;
-      if (code) { this.expClose(); this.showDetail(code); }
+
+    const end = e => {
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinchStart = null;
+      if (pts.size === 0) { E.drag = false; cv.style.cursor = 'grab'; }
+      if (tapStart && Date.now() - tapStart.t < 500 && tapStart.moved < 14) {
+        const code = this.expNodeAt(tapStart.x, tapStart.y);
+        if (code) { this.expClose(); this.showDetail(code); }
+      }
+      tapStart = null;
+    };
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+
+    // keyboard: arrows pan, +/- zoom
+    cv.setAttribute('tabindex', '0');
+    cv.addEventListener('keydown', e => {
+      const step = 40;
+      if (e.key === 'ArrowLeft') E.panX += step;
+      else if (e.key === 'ArrowRight') E.panX -= step;
+      else if (e.key === 'ArrowUp') E.panY += step;
+      else if (e.key === 'ArrowDown') E.panY -= step;
+      else if (e.key === '+' || e.key === '=') zoomAt((E.w || 400) / 2, (E.h || 400) / 2, 1.2);
+      else if (e.key === '-') zoomAt((E.w || 400) / 2, (E.h || 400) / 2, 0.83);
+      else return;
+      e.preventDefault(); this.expRender();
+    });
+
+    let rt = null;
+    window.addEventListener('resize', () => {
+      if (!$('xo') || !$('xo').classList.contains('open')) return;
+      clearTimeout(rt);
+      rt = setTimeout(() => { this.expFit(false); this.expRender(); }, 180);
     });
     this.expWire();
+  };
+
+  U.expNodeAt = function (mx, my) {
+    const E = this.exp;
+    const lx = (mx - E.panX) / E.zoom, ly = (my - E.panY) / E.zoom;
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const slack = touch ? 18 : 7;
+    let best = null, bd = 1e9;
+    this.expVisible().forEach(n => {
+      const d = (n.x - lx) ** 2 + (n.y - ly) ** 2;
+      if (d < bd) { bd = d; best = n; }
+    });
+    return best && bd <= (best.r + slack) ** 2 ? best.code : null;
   };
 
   U.expHoverFromTarget = function (e, cv) {
@@ -1223,7 +1340,9 @@
       const d = (n.x - mx) ** 2 + (n.y - my) ** 2;
       if (d < bd) { bd = d; best = n; }
     });
-    const hit = best && bd <= (best.r + 5) ** 2 ? best.code : null;
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const slack = touch ? 16 : 6;
+    const hit = best && bd <= (best.r + slack) ** 2 ? best.code : null;
     cv.dataset.hoverCode = hit || '';
     if (hit !== E.hover) { E.hover = hit; this.expRender(); }
   };

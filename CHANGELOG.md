@@ -1,5 +1,31 @@
 # Changelog
 
+## 14.8.0 — 2026-11-11
+
+The explorer was built for a desktop and dropped onto a phone.
+
+### Fixed — mobile
+- **Layout size.** The graph was always relaxed for 1200×800, so on a 390 px screen only
+  its left edge was visible. It is now computed at the canvas's real size and refits on
+  rotate or resize.
+- **Toolbar.** Three wrapped rows and a 130 px legend left 628 px of a 844 px screen.
+  Now: search on its own row, one control row, icon-only close/zoom/reset, legend on a
+  single scrollable line — 126 px total.
+- **Touch.** There were no touch handlers at all — only mouse. Pointer events now drive
+  drag, pinch-zoom (1.00 → 2.25 in test), and tap-to-open with a 16–18 px hit radius.
+- **Tap selection** looked up a hover code that touch never sets; the node is now found
+  from the pointer position.
+- **Labels.** Clamped inside the canvas (none clipped), haloed on small screens so they
+  stay readable over nodes, and placed in four candidate positions. 48 labels on a phone,
+  95 on desktop, 0 clipped, 0 label-label overlaps.
+- `touch-action: none` on the canvas so dragging does not scroll the page, and safe-area
+  padding for notched phones.
+
+### Also
+- Keyboard: arrows pan, +/- zoom when the canvas has focus.
+- `setPointerCapture` is guarded — a synthetic or cancelled pointer no longer aborts the
+  handler.
+
 ## 14.7.0 — 2026-11-11
 
 The explorer was a hairball, and thermals were missing entirely.

@@ -273,7 +273,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   background:var(--surface);flex-wrap:wrap}
 .xt input{flex:1;min-width:130px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--paper);padding:0 10px}
 .xt select{height:38px;border-radius:9px;border:1px solid var(--line);background:var(--paper);padding:0 8px}
-.xc{flex:1;overflow:auto;padding:8px}
+.xc{flex:1;overflow:hidden;padding:0;touch-action:none;position:relative}
 .gw{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .gw svg{display:block;width:100%;height:auto}
 .gn{cursor:pointer}
@@ -480,7 +480,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
 }
 
 /* ---------------- explorer ---------------- */
-.xc{cursor:grab;overflow:hidden;background:var(--paper)}
+.xc{cursor:grab;overflow:hidden;background:var(--paper);touch-action:none;-webkit-user-select:none;user-select:none}
 .xleg{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:6px 12px;font-size:11px;color:var(--ink-2);
  border-top:1px solid var(--line);background:var(--surface)}
 .xleg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
@@ -600,3 +600,26 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .print-case{display:block}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;scroll-behavior:auto !important}}
+
+/* ---------------- explorer on small screens ---------------- */
+@media (max-width:700px){
+  .xo{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  .xt{padding:8px 10px;gap:6px;row-gap:6px}
+  .xt input{flex:1 1 100%;order:-1;min-width:0;height:40px;font-size:14px}
+  .xt select{flex:1 1 0;min-width:0;height:38px;font-size:11px;padding:0 2px}
+  .xt .btn{height:38px;padding:0 10px;font-size:12px}
+  .xt #x-cl{flex:0 0 40px;width:40px;padding:0;font-size:0}
+  .xt #x-cl::before{content:"✕";font-size:15px}
+  .xt #x-zi,.xt #x-zo{flex:0 0 38px;min-width:38px;padding:0;font-size:15px}
+  .xt #x-re{flex:0 0 40px;width:40px;padding:0;font-size:0}
+  .xt #x-re::before{content:"⟳";font-size:16px}
+  .xleg{flex-wrap:nowrap;overflow-x:auto;gap:10px;padding:7px 10px;font-size:11px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .xleg::-webkit-scrollbar{display:none}
+  .xleg span{white-space:nowrap}
+  .xleg span:last-child{display:none}
+}
+@media (max-width:420px){
+  .xt #x-re{flex:0 0 auto;padding:0 10px}
+  .xleg{font-size:10.5px}
+}
