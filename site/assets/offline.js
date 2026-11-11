@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.11.0';
+  U.appVersion = '13.12.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -48,6 +48,19 @@
     const key = await keyFrom(pass, salt, ['decrypt']);
     const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, unb64(env.payload));
     return JSON.parse(DEC.decode(pt));
+  }
+
+  /* ---------- record hashing (for deltas) ---------- */
+  async function hashRow(row) {
+    const buf = await crypto.subtle.digest('SHA-256', ENC.encode(JSON.stringify(row)));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  }
+  async function hashAll(data) {
+    const out = { clinic: {}, cases: {} };
+    for (const store of ['clinic', 'cases']) {
+      for (const row of data.stores[store] || []) out[store][row.id] = await hashRow(row);
+    }
+    return out;
   }
 
   /* ---------- gather everything ---------- */
@@ -105,6 +118,7 @@
         clinic: data.stores.clinic.map(c => c.id),
         cases: data.stores.cases.map(c => c.id)
       });
+      H.St.s('backupHashes', await hashAll(data));
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
       this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
@@ -153,6 +167,56 @@
     }
   }
 
+  /* ---------- delta backup ---------- */
+  U.canDelta = function () { return !!H.St.g('backupHashes', null); };
+
+  U.backupDelta = async function () {
+    const prev = H.St.g('backupHashes', null);
+    if (!prev) return this.toast('Take a full backup first — a delta needs something to compare against');
+    const pass = prompt('Passphrase for this backup (min 8 characters).\nSame passphrase as your full backup.');
+    if (pass === null) return;
+    if (!pass || pass.length < 8) return this.toast('Passphrase must be at least 8 characters');
+    try {
+      const data = await collect();
+      const now = await hashAll(data);
+      const changed = { clinic: [], cases: [] };
+      const removed = [];
+      for (const store of ['clinic', 'cases']) {
+        for (const row of data.stores[store]) {
+          if (prev[store][row.id] !== now[store][row.id]) changed[store].push(row);
+        }
+        for (const id of Object.keys(prev[store])) {
+          if (!now[store][id]) removed.push({ store, id });
+        }
+      }
+      const total = changed.clinic.length + changed.cases.length + removed.length;
+      if (!total) return this.toast('Nothing has changed since the last backup');
+      const payload = {
+        schema: 2, kind: 'delta', appVersion: U.appVersion, dataVersion: U.dataVersion(),
+        exportedAt: new Date().toISOString(),
+        stores: changed, removed,
+        settings: { boards: H.St.g('boards', null), lang: H.St.g('lang', 'en'), mode: H.St.g('mode', 'acute'), theme: H.St.g('theme', 'light'), casename: H.St.g('casename', '') }
+      };
+      const env = await encryptJSON(payload, pass);
+      env.kind = 'backup-delta';
+      const check = await decryptJSON(env, pass);
+      if (!check || !check.stores) return this.toast('Backup verification failed — nothing was saved');
+      const name = `remedy-finder-delta-${new Date().toISOString().slice(0, 10)}.rfb.json`;
+      const text = JSON.stringify(env, null, 1);
+      const saved = await writeBackup(name, text);
+      if (/cancel/i.test(saved)) return this.toast('Backup cancelled — nothing was written');
+      H.St.s('lastBackup', Date.now());
+      H.St.s('backupHashes', now);
+      const log = H.St.g('backupLog', []);
+      log.unshift({ t: Date.now(), clinic: changed.clinic.length, cases: changed.cases.length, srs: 0, bytes: text.length, edition: data.dataVersion, where: saved + ' (delta)' });
+      H.St.s('backupLog', log.slice(0, 10));
+      this.toast(`Delta saved — ${changed.clinic.length} cases, ${changed.cases.length} repertorisations, ${removed.length} removed`);
+      this.offlinePanel();
+    } catch (e) {
+      this.toast('Delta backup failed: ' + e.message);
+    }
+  };
+
   /* ---------- restore ---------- */
   U.restore = function () {
     const inp = document.createElement('input');
@@ -164,17 +228,20 @@
       let env;
       try { env = JSON.parse(await f.text()); }
       catch (e) { return this.toast('Not a backup file'); }
-      if (!env || env.kind !== 'backup') return this.toast('Not a Remedy Finder backup');
+      if (!env || (env.kind !== 'backup' && env.kind !== 'backup-delta')) return this.toast('Not a Remedy Finder backup');
       const pass = prompt(`Passphrase for this backup.\nExported ${env.exportedAt ? env.exportedAt.slice(0, 10) : '?'} · data ${env.dataVersion || '?'}`);
       if (!pass) return;
       let data;
       try { data = await decryptJSON(env, pass); }
       catch (e) { return this.toast('Wrong passphrase, or the file is damaged'); }
       if (!data || !data.stores) return this.toast('Backup is empty');
+      const isDelta = env.kind === 'backup-delta' || data.kind === 'delta';
       const counts = {
         clinic: (data.stores.clinic || []).length,
         cases: (data.stores.cases || []).length,
-        srs: ((data.settings || {}).srs || []).length
+        srs: ((data.settings || {}).srs || []).length,
+        removed: (data.removed || []).length,
+        delta: isDelta
       };
       const go = await this.restorePreview(env, data, counts);
       if (!go) return;
@@ -182,6 +249,10 @@
         for (const store of ['clinic', 'cases']) {
           const rows = data.stores[store] || [];
           for (const row of rows) if (row && row.id) await H.IDB.put(store, row);
+        }
+        if (data.removed && data.removed.length) {
+          const go = confirm(`${data.removed.length} record(s) were deleted after this backup.\n\nOK = delete them here too\nCancel = keep them`);
+          if (go) for (const r of data.removed) { try { await H.IDB.del(r.store, r.id); } catch (e) {} }
         }
         if (data.settings) {
           const s = data.settings;
@@ -220,6 +291,8 @@
             ${row('Clinic cases', counts.clinic)}
             ${row('Saved repertorisations', counts.cases)}
             ${row('Study cards', counts.srs)}
+            ${counts.delta ? row('Kind', 'delta — changes only') : ''}
+            ${counts.delta ? row('Deletions recorded', counts.removed) : ''}
           </div>
           <div class="backup-note" style="margin-top:12px">Records are merged: matching IDs are replaced, everything else is kept. Nothing is deleted.</div>
           <div class="xm" style="margin-top:12px">
@@ -314,6 +387,7 @@
       ${days !== null && days > 7 ? `<div class="backup-note">Last backup was ${days} days ago. A backup is the only copy that survives clearing site data.</div>` : ''}
       <div class="xm" style="margin-top:14px">
         <button class="btn bp" id="off-backup">Backup now (encrypted)</button>
+        <button class="btn bg" id="off-delta" ${this.canDelta() ? '' : 'disabled title="Take a full backup first"'}>Backup changes only</button>
         <button class="btn bg" id="off-restore">Restore from file</button>
         <button class="btn bg" id="off-precache" ${location.protocol === 'file:' ? 'disabled title="Only needed for the web app"' : ''}>Download everything for offline</button>
         <button class="btn bg" id="off-export">Plain JSON (no passphrase)</button>
@@ -328,6 +402,7 @@
       </div>`;
 
     $('off-backup').onclick = () => this.backup();
+    const dl = $('off-delta'); if (dl) dl.onclick = () => this.backupDelta();
     $('off-restore').onclick = () => this.restore();
     $('off-export').onclick = async () => {
       const data = await collect();

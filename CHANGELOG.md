@@ -1,5 +1,21 @@
 # Changelog
 
+## 13.12.0 — 2026-11-11
+
+Frequent small backups instead of occasional large ones.
+
+### Added
+- **Delta backup.** After one full backup, "Backup changes only" hashes every record
+  (SHA-256, truncated) and writes a file containing just the rows that changed plus a
+  list of deletions. Same encryption, same verification, a fraction of the size.
+- **Delta restore.** The preview says *delta — changes only* and how many deletions it
+  carries; merging is by record ID, and deletions are applied only if you confirm.
+- Backup history marks delta entries.
+
+### Notes
+- Hashing 500 records takes well under a second; the hash map lives in localStorage
+  (id → 16 hex chars) and is replaced after each backup.
+
 ## 13.11.0 — 2026-11-11
 
 The small things that make an offline vault usable day to day.
