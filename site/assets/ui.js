@@ -947,6 +947,101 @@
     }
   };
 
+  /* ---------- about (replaces the v12 card) ---------- */
+  U.showAbout = function () {
+    const remCount = H.DB ? H.DB.remedyCount : 0;
+    const symCount = H.DB ? H.DB.count : 0;
+    const m = $('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">About</div>
+      <div class="msu">Remedy Finder ${this.appVersion || ''} · offline, no account, no tracking</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <div class="about-card">
+          <div class="about-avatar">SM</div>
+          <div class="about-name">Dr. Sohil Momin</div>
+          <div class="about-role">Homeopathic physician · builder of offline-first clinical tools</div>
+          <p class="about-bio">A repertory and materia medica workbench for study and practice. It runs from a single file, works with the network off, and keeps cases on the device that made them.</p>
+          <div class="about-meta">
+            <span>${remCount} remedies</span><span>${symCount} symptoms</span>
+            <span>${(H.DB.links || 0).toLocaleString('en-IN')} graded links</span><span>${this.dataVersion()}</span>
+          </div>
+          <div class="about-badges">
+            <span class="about-badge">Educational tool</span><span class="about-badge">Offline-first</span>
+            <span class="about-badge">No data collection</span><span class="about-badge">Open knowledge</span>
+          </div>
+          <p class="about-bio" style="font-size:12px">Intended for education and study. It does not provide medical advice, diagnosis or treatment. It ranks similarity to the symptoms you enter; the choice of remedy remains a clinician's.</p>
+          <div class="xm" style="margin-top:12px">
+            <button class="btn bp btn-sm" id="ab-prov">Sources & provenance</button>
+            <button class="btn bg btn-sm" id="ab-lic">Licence</button>
+          </div>
+          <div class="about-footer">
+            <strong>Materia medica:</strong> Boericke 1906 · Clarke 1900 · Kent 1904 · Allen 1916 · Nash 1899 · Guernsey 1886 (public domain)<br>
+            <strong>Repertory grades:</strong> Repertorium Publicum (2008), Vladimir Polony — GPL v3<br>
+            <strong>Code:</strong> PolyForm Noncommercial 1.0.0 · © 2026 Dr. Sohil Momin
+          </div>
+        </div>
+      </div>`;
+    this.om();
+    $('mc').onclick = () => this.cm();
+    const p = $('ab-prov'); if (p) p.onclick = () => { this.cm(); setTimeout(() => this.provenancePanel(), 60); };
+    const l = $('ab-lic'); if (l) l.onclick = () => { this.cm(); setTimeout(() => this.provenancePanel(), 60); };
+  };
+
+  /* ---------- sources & provenance ---------- */
+  U.provenancePanel = function () {
+    const R = H.DB.remedies, codes = Object.keys(R);
+    const srcCount = {};
+    let quoted = 0, dual = 0;
+    codes.forEach(c => {
+      const r = R[c];
+      if (r.quote) { quoted++; srcCount[r.qsrc] = (srcCount[r.qsrc] || 0) + 1; }
+      if (r.quote2) { dual++; srcCount[r.qsrc2] = (srcCount[r.qsrc2] || 0) + 1; }
+    });
+    const links = H.DB.links || 0;
+    const rub = (window.HRF_RUB && window.HRF_RUB.r) ? window.HRF_RUB.r.length : 0;
+    const rare = (window.HRF_RUB && window.HRF_RUB.r) ? window.HRF_RUB.r.filter(x => x[1].length === 4).length : 0;
+    const srcName = k => (H.Src.r[k] || {}).n || k;
+    const srcEra = k => (H.Src.r[k] || {}).era || '';
+    const rows = Object.entries(srcCount).sort((a, b) => b[1] - a[1]);
+    const m = $('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">Sources & provenance</div>
+      <div class="msu">What is in this app, where it came from, and what it cannot do</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <div class="offgrid">
+          <div class="offrow"><span>Remedies</span><b>${codes.length}</b></div>
+          <div class="offrow"><span>Symptoms (curated)</span><b>${H.DB.count}</b></div>
+          <div class="offrow"><span>Graded symptom links</span><b>${links.toLocaleString('en-IN')}</b></div>
+          <div class="offrow"><span>Repertory rubrics</span><b>${rub ? rub.toLocaleString('en-IN') : 'not in this build'}</b></div>
+          ${rub ? `<div class="offrow"><span>· of which two-remedy rubrics</span><b>${rare.toLocaleString('en-IN')}</b></div>` : ''}
+          <div class="offrow"><span>Remedies with a quotation</span><b>${quoted}${dual ? ` · ${dual} with two` : ''}</b></div>
+          <div class="offrow"><span>Data edition</span><b>${this.dataVersion()}</b></div>
+        </div>
+
+        <div class="msec" style="margin-top:16px"><h4>Quotations by source</h4>
+          <div class="offgrid">${rows.map(([k, n]) => `<div class="offrow"><span>${this.esc(srcName(k))} ${this.esc(srcEra(k))}</span><b>${n}</b></div>`).join('') || '<div class="offrow"><span>None</span><b>0</b></div>'}</div>
+        </div>
+
+        <div class="msec" style="margin-top:16px"><h4>Licences</h4>
+          <ul class="cmp-list">
+            <li>Repertorium Publicum (2008), Vladimir Polony — GPL v3 <span>repertory grades and rubric paths</span></li>
+            <li>Boericke 1906, Kent 1904, Allen 1916, Clarke 1900, Nash 1899, Guernsey 1886 — public domain <span>materia medica text</span></li>
+            <li>Application code — PolyForm Noncommercial 1.0.0 <span>free for study, teaching and noncommercial practice</span></li>
+          </ul>
+        </div>
+
+        <div class="msec" style="margin-top:16px"><h4>What this app does not do</h4>
+          <ul class="cmp-list">
+            <li>It does not diagnose and does not prescribe. <span>it ranks similarity to the symptoms you enter</span></li>
+            <li>It does not grade Kent 1897 links. <span>the grades come from Repertorium Publicum only</span></li>
+            <li>It does not contain single-remedy rubrics. <span>one remedy cannot discriminate</span></li>
+            <li>It does not cover every Boericke entry. <span>379 of roughly 700 were extracted</span></li>
+            <li>It does not send anything anywhere. <span>no network calls at runtime</span></li>
+          </ul>
+        </div>
+      </div>`;
+    this.om();
+    $('mc').onclick = () => this.cm();
+  };
+
   /* ---------- compare two cases ---------- */
   U.caseDiffPick = async function (id) {
     const c = await H.Clinic.get(id);

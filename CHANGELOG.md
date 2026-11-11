@@ -1,5 +1,21 @@
 # Changelog
 
+## 14.6.0 — 2026-11-11
+
+Saying plainly what is in the app, and what is not.
+
+### Added
+- **Sources & provenance screen** (About → Sources & provenance): live counts of remedies,
+  symptoms, graded links and rubrics; quotations counted per source; the licence for each
+  layer of data; and an explicit list of limits — no diagnosis, no Kent 1897 grades, no
+  single-remedy rubrics, Boericke extraction incomplete, nothing sent anywhere.
+- **About panel rewritten** for the current app: live numbers instead of a hardcoded
+  "v12 Verified", no emoji, and a link straight to provenance.
+
+### Fixed
+- The graded-link count was quoted as 44,704 in the README, page metadata and landing
+  page. Counted from the data it is **44,710**; all copy now says so.
+
 ## 14.5.0 — 2026-11-11
 
 The sharp end of the repertory, one tap away.
