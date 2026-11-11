@@ -1,5 +1,22 @@
 # Changelog
 
+## 13.7.0 — 2026-11-11
+
+Offline durability, part two: make the backup trustworthy rather than merely present.
+
+### Added
+- **Backup verification.** After encrypting, the file is decrypted again in memory and
+  the record counts compared before the app says "saved". A backup that cannot be read
+  back is never reported as successful.
+- **Write to a folder you choose.** File System Access API with a remembered handle —
+  one click re-saves to the same file. Falls back to a download where unsupported;
+  cancelling writes nothing.
+- **Restore preview.** Before anything is written: exported date, data edition, app
+  version and record counts, with an explicit "records are merged, nothing is deleted".
+- **Backup reminder.** Dismissible banner when records exist and the last backup is
+  older than seven days; "Later" snoozes for three days.
+- **Connection chip** in the top bar: `offline-ready`, `offline` or `local file`.
+
 ## 13.6.0 — 2026-11-11
 
 Offline durability. If the device is the only copy, the device needs a backup path.

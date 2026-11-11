@@ -82,16 +82,66 @@
     try {
       const data = await collect();
       const env = await encryptJSON(data, pass);
+      // verify: decrypt what we are about to write and compare counts
+      const check = await decryptJSON(env, pass);
+      const same = (a, b) => (a || []).length === (b || []).length;
+      if (!check || !check.stores || !same(check.stores.clinic, data.stores.clinic) ||
+          !same(check.stores.cases, data.stores.cases) || !same(check.settings.srs, data.settings.srs)) {
+        this.toast('Backup verification failed — nothing was saved');
+        return;
+      }
       const name = `remedy-finder-backup-${new Date().toISOString().slice(0, 10)}.rfb.json`;
-      H.Ex.dl(name, JSON.stringify(env, null, 1), 'application/json');
+      const text = JSON.stringify(env, null, 1);
+      const saved = await writeBackup(name, text);
+      if (/cancel/i.test(saved)) { this.toast('Backup cancelled — nothing was written'); return; }
       H.St.s('lastBackup', Date.now());
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
-      this.toast(`Backup saved — ${counts}`);
+      this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
     } catch (e) {
       this.toast('Backup failed: ' + e.message);
     }
   };
+
+  /* ---------- write to a folder the user picked once ---------- */
+  const HANDLE_KEY = 'backupHandle';
+  async function getHandle() {
+    try { return await H.IDB.get('settings', HANDLE_KEY); } catch (e) { return null; }
+  }
+  async function putHandle(h) {
+    try { await H.IDB.put('settings', { id: HANDLE_KEY, handle: h }); } catch (e) {}
+  }
+  async function writeBackup(name, text) {
+    if (!window.showSaveFilePicker) {
+      H.Ex.dl(name, text, 'application/json');
+      return 'Backup downloaded';
+    }
+    try {
+      let handle = await getHandle();
+      if (handle && handle.queryPermission) {
+        const st = await handle.queryPermission({ mode: 'readwrite' });
+        if (st !== 'granted') {
+          const rq = await handle.requestPermission({ mode: 'readwrite' });
+          if (rq !== 'granted') handle = null;
+        }
+      }
+      if (!handle) {
+        handle = await window.showSaveFilePicker({
+          suggestedName: name,
+          types: [{ description: 'Remedy Finder backup', accept: { 'application/json': ['.json'] } }]
+        });
+        await putHandle(handle);
+      }
+      const w = await handle.createWritable();
+      await w.write(text);
+      await w.close();
+      return 'Backup written to your folder';
+    } catch (e) {
+      if (e && e.name === 'AbortError') return 'Backup cancelled';
+      H.Ex.dl(name, text, 'application/json');
+      return 'Backup downloaded';
+    }
+  }
 
   /* ---------- restore ---------- */
   U.restore = function () {
@@ -111,8 +161,13 @@
       try { data = await decryptJSON(env, pass); }
       catch (e) { return this.toast('Wrong passphrase, or the file is damaged'); }
       if (!data || !data.stores) return this.toast('Backup is empty');
-      const replace = confirm('Restore into this device?\n\nOK = merge (existing records kept, matching IDs replaced)\nCancel = abort');
-      if (!replace) return;
+      const counts = {
+        clinic: (data.stores.clinic || []).length,
+        cases: (data.stores.cases || []).length,
+        srs: ((data.settings || {}).srs || []).length
+      };
+      const go = await this.restorePreview(env, data, counts);
+      if (!go) return;
       try {
         for (const store of ['clinic', 'cases']) {
           const rows = data.stores[store] || [];
@@ -139,6 +194,35 @@
       }
     };
     inp.click();
+  };
+
+  U.restorePreview = function (env, data, counts) {
+    return new Promise(resolve => {
+      const m = $('md');
+      const row = (k, v) => `<div class="offrow"><span>${k}</span><b>${v}</b></div>`;
+      m.innerHTML = `<div class="mh"><div><div class="mt">Restore this backup?</div>
+        <div class="msu">Decrypted on this device — nothing was sent anywhere</div></div><button class="ib" id="mc">✕</button></div>
+        <div class="mbd">
+          <div class="offgrid">
+            ${row('Exported', (env.exportedAt || '').slice(0, 16).replace('T', ' '))}
+            ${row('Data edition', env.dataVersion || 'unknown')}
+            ${row('App version', env.appVersion || 'unknown')}
+            ${row('Clinic cases', counts.clinic)}
+            ${row('Saved repertorisations', counts.cases)}
+            ${row('Study cards', counts.srs)}
+          </div>
+          <div class="backup-note" style="margin-top:12px">Records are merged: matching IDs are replaced, everything else is kept. Nothing is deleted.</div>
+          <div class="xm" style="margin-top:12px">
+            <button class="btn bp" id="r-yes">Restore ${counts.clinic + counts.cases + counts.srs} records</button>
+            <button class="btn bg" id="r-no">Cancel</button>
+          </div>
+        </div>`;
+      this.om();
+      const done = v => { this.cm(); resolve(v); };
+      $('mc').onclick = () => done(false);
+      $('r-no').onclick = () => done(false);
+      $('r-yes').onclick = () => done(true);
+    });
   };
 
   /* ---------- readiness ---------- */
@@ -251,11 +335,60 @@
   };
 
   /* ---------- stamp every saved case with the data edition ---------- */
+  const baseInit2 = U.init;
+  U.init = async function () {
+    await baseInit2.call(this);
+    try { this.connectionChip(); } catch (e) {}
+    setTimeout(() => { try { this.backupReminder(); } catch (e) {} }, 1200);
+  };
+
   const baseSave = H.C.save;
   H.C.save = async function (n, m, s, nt) {
     const c = await baseSave.call(this, n, m, s, nt);
     if (c) { c.dv = U.dataVersion(); c.av = U.appVersion; await H.IDB.put('cases', c); }
     return c;
+  };
+
+  /* ---------- reminder ---------- */
+  U.backupReminder = async function () {
+    const host = $('rv');
+    if (!host || host.querySelector('.reminder')) return;
+    const last = H.St.g('lastBackup', null);
+    const snooze = H.St.g('backupSnooze', 0);
+    if (snooze && Date.now() - snooze < 3 * 864e5) return;
+    const sc = await storeCounts();
+    const total = sc.clinic + sc.cases + sc.srs;
+    if (!total) return;
+    const days = last ? Math.floor((Date.now() - last) / 864e5) : null;
+    if (days !== null && days <= 7) return;
+    const el = document.createElement('div');
+    el.className = 'reminder';
+    el.innerHTML = `<span>${days === null ? 'No backup yet' : 'Last backup ' + days + ' days ago'} · ${total} record${total > 1 ? 's' : ''} on this device only.</span>
+      <button class="btn bp btn-sm" data-bk>Back up now</button>
+      <button class="btn bg btn-sm" data-bk-later>Later</button>`;
+    host.prepend(el);
+    el.querySelector('[data-bk]').onclick = () => { el.remove(); this.backup(); };
+    el.querySelector('[data-bk-later]').onclick = () => { H.St.s('backupSnooze', Date.now()); el.remove(); };
+  };
+
+  /* ---------- connection chip ---------- */
+  U.connectionChip = function () {
+    const bar = document.querySelector('.topact');
+    if (!bar || document.getElementById('conn-chip')) return;
+    const isFile = location.protocol === 'file:';
+    const chip = document.createElement('span');
+    chip.id = 'conn-chip';
+    chip.className = 'conn';
+    chip.title = 'This app makes no network requests at runtime';
+    const paint = () => {
+      const online = navigator.onLine;
+      chip.dataset.state = isFile ? 'file' : (online ? 'online' : 'offline');
+      chip.textContent = isFile ? 'local file' : (online ? 'offline-ready' : 'offline');
+    };
+    paint();
+    window.addEventListener('online', paint);
+    window.addEventListener('offline', paint);
+    bar.insertBefore(chip, bar.firstChild);
   };
 
   /* ---------- tools tile ---------- */

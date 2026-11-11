@@ -5,7 +5,7 @@
 **An offline homeopathic repertory workbench — not another symptom search box.**
 
 [![Live app](https://img.shields.io/badge/live%20app-drsamonline.github.io%2Fremedy--finder-0f766e?style=flat-square)](https://drsamonline.github.io/remedy-finder/)
-[![Single file](https://img.shields.io/badge/single%20file-865%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
+[![Single file](https://img.shields.io/badge/single%20file-872%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
 [![No dependencies](https://img.shields.io/badge/dependencies-0-2f6b3d?style=flat-square)](#architecture)
 [![Offline](https://img.shields.io/badge/offline-first-f6f4ef?style=flat-square)](#offline-and-install)
 [![Remedies](https://img.shields.io/badge/remedies-297-1a1a17?style=flat-square)](#the-data)
@@ -81,7 +81,7 @@ Full provenance: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 | Route | How |
 |---|---|
-| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (865 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
+| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (872 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
 | **PWA** | Open the [live app](https://drsamonline.github.io/remedy-finder/) and use *Install* / *Add to Home Screen*. A service worker caches everything; it then works with the network off. |
 | **Windows** | Tagged releases attach a portable launcher produced by CI ([`build-exe.yml`](.github/workflows/build-exe.yml)). |
 | **Android** | Install the PWA (above), or wrap the live URL into an APK with PWABuilder — see [docs/PACKAGING.md](docs/PACKAGING.md). |
@@ -95,11 +95,13 @@ explicit durability layer:
 
 | Control | What it does |
 |---|---|
-| **Encrypted backup** | One file, AES‑256‑GCM with a PBKDF2 key (150,000 rounds) from your passphrase. Cases, saved repertorisations, study cards, boards and settings. No recovery if the passphrase is lost — by design. |
-| **Restore from file** | Reads a `.rfb.json`, decrypts locally, merges by record ID. A wrong passphrase fails closed. |
+| **Encrypted backup** | One file, AES‑256‑GCM with a PBKDF2 key (150,000 rounds). Written to a folder you pick once (File System Access API) or downloaded. **Verified by decrypting it back before it is called saved.** |
+| **Restore from file** | Reads a `.rfb.json`, decrypts locally, shows a **preview** (exported date, data edition, record counts) before writing. Merges by record ID; a wrong passphrase fails closed. |
 | **Plain JSON export** | Same payload, unencrypted, for interoperability — labelled as patient data. |
 | **Download everything for offline** | Pre-caches the shell *and* the repertory file, so Repertory mode works with the network off. |
 | **Readiness panel** | Service-worker state, cached file count and size, whether the repertory is available offline, record counts, and days since last backup. |
+| **Backup reminder** | A dismissible banner appears when records exist and the last backup is over seven days old. |
+| **Connection chip** | Top bar shows `offline-ready` / `offline` / `local file`, and updates as the connection changes. |
 
 Every saved repertorisation is stamped with the **data edition** it was scored against
 (`rp2008-297r-44710l`), so a case opened a year from now can say which dataset produced
@@ -109,7 +111,7 @@ its ranking.
 
 | | `remedy-finder.html` | `remedy-finder-full.html` |
 |---|---|---|
-| Size | 865 KB | 3.0 MB |
+| Size | 872 KB | 3.0 MB |
 | Curated symptoms (634) | yes | yes |
 | Full repertory search (31,667 rubrics) | no — the mode tells you so | yes |
 | Load time | instant | repertory index builds in ~0.3 s on first use |
