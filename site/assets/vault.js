@@ -15,6 +15,7 @@
   const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   let key = null;                 // CryptoKey while unlocked
+  let typed = '';                 // last passphrase typed, survives DOM churn
   let busy = false;
 
   const b64 = b => btoa(String.fromCharCode(...new Uint8Array(b)));
@@ -93,6 +94,11 @@
   /* ---------- lock screen ---------- */
   function lockScreen(reason) {
     let el = $('vault-lock');
+    if (el) {                                   // already locked — don't rebuild (keeps typed input)
+      const note = el.querySelector('#vault-msg');
+      if (note && reason) note.textContent = '';
+      return;
+    }
     if (!el) {
       el = document.createElement('div');
       el.id = 'vault-lock';
@@ -111,26 +117,64 @@
       <p class="vault-note" id="vault-msg"></p>
     </div>`;
     const pass = $('vault-pass');
-    pass.focus();
-    const msg = t => { $('vault-msg').textContent = t || ''; };
-    const attempt = async () => {
-      const v = pass.value.trim();
-      if (!v) return;
-      msg('Decrypting…');
-      const ok = await unlockWith(v);
-      if (!ok) { msg('That passphrase does not open this vault.'); pass.select(); return; }
-      el.remove();
+    if (pass) pass.focus();
+    const tryUnlock = async () => {
+      const p = document.getElementById('vault-pass');
+      const note = document.getElementById('vault-msg');
+      const v = (p && p.value.trim()) || typed;
+      if (!v) { if (note) note.textContent = 'Enter your passphrase.'; return; }
+      if (note) note.textContent = 'Decrypting…';
+      if (!(await unlockWith(v))) { if (note) note.textContent = 'That passphrase does not open this vault.'; if (p) p.select(); return; }
+      typed = '';
+      const box = document.getElementById('vault-lock'); if (box) box.remove();
       await resume();
     };
-    $('vault-go').onclick = attempt;
-    pass.onkeydown = e => { if (e.key === 'Enter') attempt(); };
-    $('vault-recover').onclick = () => {
-      pass.type = 'text';
-      pass.placeholder = 'Recovery key — XXXX XXXX XXXX …';
-      msg('Enter the recovery key issued when you set the passphrase.');
-      pass.focus();
+    const goBtn = el.querySelector('#vault-go');
+    if (goBtn) goBtn.onclick = ev => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } tryUnlock(); };
+    const recBtn = el.querySelector('#vault-recover');
+    if (recBtn) recBtn.onclick = ev => {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      const p = document.getElementById('vault-pass');
+      if (p) { p.type = 'text'; p.placeholder = 'Recovery key — XXXX XXXX XXXX …'; p.focus(); }
+      const note = document.getElementById('vault-msg');
+      if (note) note.textContent = 'Enter the recovery key issued when you set the passphrase.';
     };
   }
+
+  /* one delegated handler — survives any re-render of the lock screen */
+  window.addEventListener('input', e => {
+    if (e.target && e.target.id === 'vault-pass') typed = e.target.value;
+  }, true);
+
+  window.addEventListener('click', async e => {
+    const go = e.target.closest('#vault-go');
+    const rec = e.target.closest('#vault-recover');
+    if (!go && !rec) return;
+    const pass = document.getElementById('vault-pass');
+    const note = document.getElementById('vault-msg');
+    const msg = t => { if (note) note.textContent = t || ''; };
+    if (rec) {
+      if (pass) { pass.type = 'text'; pass.placeholder = 'Recovery key — XXXX XXXX XXXX …'; pass.focus(); }
+      msg('Enter the recovery key issued when you set the passphrase.');
+      return;
+    }
+    const v = (pass && pass.value.trim()) || typed;
+    if (!v) { msg('Enter your passphrase.'); return; }
+    msg('Decrypting…');
+    const ok = await unlockWith(v);
+    if (!ok) { msg('That passphrase does not open this vault.'); if (pass) pass.select(); return; }
+    typed = '';
+    const el = document.getElementById('vault-lock');
+    if (el) el.remove();
+    await resume();
+  }, true);
+
+  window.addEventListener('keydown', async e => {
+    if (e.key !== 'Enter') return;
+    if (!document.getElementById('vault-lock')) return;
+    const go = document.getElementById('vault-go');
+    if (go) go.click();
+  }, true);
 
   async function unlockWith(passphrase) {
     const m = meta();
@@ -146,6 +190,7 @@
       const check = await open(k, m.canary);
       if (check !== 'remedy-finder-vault') return false;
       key = k;
+      restartIdle();
       return true;
     } catch (e) { return false; }
   }
@@ -216,8 +261,25 @@
 
   U.vaultLock = function () {
     key = null;
+    stopIdle();
     lockScreen('Locked. Enter your passphrase to continue.');
   };
+
+  /* ---------- auto-lock after idle ---------- */
+  let idleT = null;
+  const IDLE_KEY = 'autolock';
+  U.idleMinutes = function () { const m = H.St.g(IDLE_KEY, 5); return m === 0 ? 0 : m; };
+  U.setIdleMinutes = function (m) { H.St.s(IDLE_KEY, m); restartIdle(); this.vaultPanel(); };
+  function stopIdle() { clearTimeout(idleT); idleT = null; }
+  function restartIdle() {
+    stopIdle();
+    if (!isOn() || !key) return;
+    const mins = U.idleMinutes();
+    if (!mins) return;
+    idleT = setTimeout(() => { U.vaultLock(); }, mins * 60000);
+  }
+  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev =>
+    window.addEventListener(ev, () => { if (key) restartIdle(); }, { passive: true }));
 
   /* ---------- panel ---------- */
   U.vaultPanel = function () {
@@ -233,6 +295,9 @@
           <div class="offrow"><span>Protected stores</span><b>clinic · cases · packs</b></div>
           <div class="offrow"><span>Session</span><b>${on ? (isUnlocked() ? 'unlocked' : 'locked') : '—'}</b></div>
         </div>
+        ${on ? `<div class="langrow" style="margin-top:12px"><span>Auto-lock</span>
+          ${[1, 5, 15, 0].map(m => `<button class="btn bg btn-sm ${this.idleMinutes() === m ? 'on' : ''}" data-idle="${m}">${m ? m + ' min' : 'never'}</button>`).join('')}
+        </div>` : ''}
         <div class="xm" style="margin-top:14px">
           ${on ? `<button class="btn bp" id="v-lock">Lock now</button>
                   <button class="btn bg" id="v-off">Turn encryption off</button>`
@@ -244,6 +309,7 @@
       </div>`;
     this.om();
     $('mc').onclick = () => this.cm();
+    document.querySelectorAll('[data-idle]').forEach(b => b.addEventListener('click', () => this.setIdleMinutes(parseInt(b.dataset.idle, 10))));
     const on2 = $('v-on'); if (on2) on2.onclick = () => this.vaultSetup();
     const lk = $('v-lock'); if (lk) lk.onclick = () => { this.cm(); this.vaultLock(); };
     const off = $('v-off'); if (off) off.onclick = () => this.vaultDisable();
@@ -255,6 +321,8 @@
     if (isOn() && !key) { lockScreen(); return; }
     return baseInit.call(this);
   };
+
+  window.__vault = { unlockWith, isOn, isUnlocked, meta, get typed() { return typed; } };
 
   /* tools tile */
   const baseTools = U.toolsSheet;

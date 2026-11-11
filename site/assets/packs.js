@@ -76,6 +76,10 @@
       catch (e) { return this.toast('Not a JSON file'); }
       const err = this.validatePack(obj);
       if (err) return this.toast('Pack rejected: ' + err);
+      if (obj.checksum) {
+        const want = await digest(obj.remedies);
+        if (want !== obj.checksum) return this.toast('Pack rejected: checksum mismatch — the file was modified');
+      }
       const codes = Object.keys(obj.remedies);
       if (!confirm(`Load “${obj.name || 'untitled pack'}” with ${codes.length} remedies?\n\nExisting remedies with the same code will be replaced.`)) return;
       this.applyPack(obj);
@@ -84,7 +88,12 @@
     inp.click();
   };
 
-  U.exportPack = function () {
+  async function digest(obj) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(obj)));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  U.exportPack = async function () {
     const out = { format: 'rf-pack', v: 1, name: 'Remedy Finder — current data', author: 'Dr Sohil Momin', note: 'Full snapshot of this app\'s remedies, generated offline.', remedies: {} };
     Object.entries(H.DB.remedies).forEach(([code, r]) => {
       out.remedies[code] = [r.name, r.latin, r.group, r.acute ? 1 : 0, r.constitutional ? 1 : 0,
@@ -92,8 +101,9 @@
         r.keynotes, r.clinicals, { c: r.relationships.comp, a: r.relationships.antid, f: r.relationships.follows },
         r.family, r.sources, r.description, r.strong, r.weak, r.quote, r.qsrc, r.quote2, r.qsrc2];
     });
+    out.checksum = await digest(out.remedies);
     H.Ex.dl(`remedy-finder-pack-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(out), 'application/json');
-    this.toast(`Pack exported — ${Object.keys(out.remedies).length} remedies`);
+    this.toast(`Pack exported — ${Object.keys(out.remedies).length} remedies · sha256 ${out.checksum.slice(0, 12)}…`);
   };
 
   U.removePacks = function () {

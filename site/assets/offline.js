@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.10.0';
+  U.appVersion = '13.11.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -101,6 +101,10 @@
         srs: (data.settings.srs || []).length, bytes: text.length, edition: data.dataVersion, where: saved
       });
       H.St.s('backupLog', log.slice(0, 10));
+      H.St.s('lastBackupIds', {
+        clinic: data.stores.clinic.map(c => c.id),
+        cases: data.stores.cases.map(c => c.id)
+      });
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
       this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
@@ -285,6 +289,14 @@
 
     const body = $('off-body');
     if (!body) return;
+    const ids = H.St.g('lastBackupIds', null);
+    let delta = null;
+    if (ids) {
+      const nowC = (await H.IDB.all('clinic')).map(c => c.id);
+      const nowR = (await H.IDB.all('cases')).map(c => c.id);
+      const before = new Set([...(ids.clinic || []), ...(ids.cases || [])]);
+      delta = [...nowC, ...nowR].filter(id => !before.has(id)).length;
+    }
     const row = (k, v, good) => `<div class="offrow"><span>${k}</span><b class="${good === false ? 'bad' : good ? 'good' : ''}">${v}</b></div>`;
     body.innerHTML = `
       <div class="offgrid">
@@ -297,6 +309,7 @@
         ${row('Saved repertorisations', sc.cases)}
         ${row('Study cards', sc.srs)}
         ${row('Last backup', lastTxt + (days !== null && days > 7 ? ' ⚠' : ''), last ? days <= 7 : false)}
+        ${row('New records since backup', delta === null ? '—' : delta, delta === null ? null : delta === 0)}
       </div>
       ${days !== null && days > 7 ? `<div class="backup-note">Last backup was ${days} days ago. A backup is the only copy that survives clearing site data.</div>` : ''}
       <div class="xm" style="margin-top:14px">

@@ -590,7 +590,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v13.10</div>
+          <div class="bsub">Repertory workbench · v13.11</div>
         </div>
       </div>
       <label class="casebar">
@@ -2023,7 +2023,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.10.0';
+  U.appVersion = '13.11.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -2106,6 +2106,10 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         srs: (data.settings.srs || []).length, bytes: text.length, edition: data.dataVersion, where: saved
       });
       H.St.s('backupLog', log.slice(0, 10));
+      H.St.s('lastBackupIds', {
+        clinic: data.stores.clinic.map(c => c.id),
+        cases: data.stores.cases.map(c => c.id)
+      });
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
       this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
@@ -2290,6 +2294,14 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
 
     const body = $('off-body');
     if (!body) return;
+    const ids = H.St.g('lastBackupIds', null);
+    let delta = null;
+    if (ids) {
+      const nowC = (await H.IDB.all('clinic')).map(c => c.id);
+      const nowR = (await H.IDB.all('cases')).map(c => c.id);
+      const before = new Set([...(ids.clinic || []), ...(ids.cases || [])]);
+      delta = [...nowC, ...nowR].filter(id => !before.has(id)).length;
+    }
     const row = (k, v, good) => `<div class="offrow"><span>${k}</span><b class="${good === false ? 'bad' : good ? 'good' : ''}">${v}</b></div>`;
     body.innerHTML = `
       <div class="offgrid">
@@ -2302,6 +2314,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         ${row('Saved repertorisations', sc.cases)}
         ${row('Study cards', sc.srs)}
         ${row('Last backup', lastTxt + (days !== null && days > 7 ? ' ⚠' : ''), last ? days <= 7 : false)}
+        ${row('New records since backup', delta === null ? '—' : delta, delta === null ? null : delta === 0)}
       </div>
       ${days !== null && days > 7 ? `<div class="backup-note">Last backup was ${days} days ago. A backup is the only copy that survives clearing site data.</div>` : ''}
       <div class="xm" style="margin-top:14px">
@@ -2503,6 +2516,10 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       catch (e) { return this.toast('Not a JSON file'); }
       const err = this.validatePack(obj);
       if (err) return this.toast('Pack rejected: ' + err);
+      if (obj.checksum) {
+        const want = await digest(obj.remedies);
+        if (want !== obj.checksum) return this.toast('Pack rejected: checksum mismatch — the file was modified');
+      }
       const codes = Object.keys(obj.remedies);
       if (!confirm(`Load “${obj.name || 'untitled pack'}” with ${codes.length} remedies?\n\nExisting remedies with the same code will be replaced.`)) return;
       this.applyPack(obj);
@@ -2511,7 +2528,12 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     inp.click();
   };
 
-  U.exportPack = function () {
+  async function digest(obj) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(obj)));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  U.exportPack = async function () {
     const out = { format: 'rf-pack', v: 1, name: 'Remedy Finder — current data', author: 'Dr Sohil Momin', note: 'Full snapshot of this app\'s remedies, generated offline.', remedies: {} };
     Object.entries(H.DB.remedies).forEach(([code, r]) => {
       out.remedies[code] = [r.name, r.latin, r.group, r.acute ? 1 : 0, r.constitutional ? 1 : 0,
@@ -2519,8 +2541,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         r.keynotes, r.clinicals, { c: r.relationships.comp, a: r.relationships.antid, f: r.relationships.follows },
         r.family, r.sources, r.description, r.strong, r.weak, r.quote, r.qsrc, r.quote2, r.qsrc2];
     });
+    out.checksum = await digest(out.remedies);
     H.Ex.dl(`remedy-finder-pack-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(out), 'application/json');
-    this.toast(`Pack exported — ${Object.keys(out.remedies).length} remedies`);
+    this.toast(`Pack exported — ${Object.keys(out.remedies).length} remedies · sha256 ${out.checksum.slice(0, 12)}…`);
   };
 
   U.removePacks = function () {
@@ -2617,6 +2640,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   let key = null;                 // CryptoKey while unlocked
+  let typed = '';                 // last passphrase typed, survives DOM churn
   let busy = false;
 
   const b64 = b => btoa(String.fromCharCode(...new Uint8Array(b)));
@@ -2695,6 +2719,11 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   /* ---------- lock screen ---------- */
   function lockScreen(reason) {
     let el = $('vault-lock');
+    if (el) {                                   // already locked — don't rebuild (keeps typed input)
+      const note = el.querySelector('#vault-msg');
+      if (note && reason) note.textContent = '';
+      return;
+    }
     if (!el) {
       el = document.createElement('div');
       el.id = 'vault-lock';
@@ -2713,26 +2742,64 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       <p class="vault-note" id="vault-msg"></p>
     </div>`;
     const pass = $('vault-pass');
-    pass.focus();
-    const msg = t => { $('vault-msg').textContent = t || ''; };
-    const attempt = async () => {
-      const v = pass.value.trim();
-      if (!v) return;
-      msg('Decrypting…');
-      const ok = await unlockWith(v);
-      if (!ok) { msg('That passphrase does not open this vault.'); pass.select(); return; }
-      el.remove();
+    if (pass) pass.focus();
+    const tryUnlock = async () => {
+      const p = document.getElementById('vault-pass');
+      const note = document.getElementById('vault-msg');
+      const v = (p && p.value.trim()) || typed;
+      if (!v) { if (note) note.textContent = 'Enter your passphrase.'; return; }
+      if (note) note.textContent = 'Decrypting…';
+      if (!(await unlockWith(v))) { if (note) note.textContent = 'That passphrase does not open this vault.'; if (p) p.select(); return; }
+      typed = '';
+      const box = document.getElementById('vault-lock'); if (box) box.remove();
       await resume();
     };
-    $('vault-go').onclick = attempt;
-    pass.onkeydown = e => { if (e.key === 'Enter') attempt(); };
-    $('vault-recover').onclick = () => {
-      pass.type = 'text';
-      pass.placeholder = 'Recovery key — XXXX XXXX XXXX …';
-      msg('Enter the recovery key issued when you set the passphrase.');
-      pass.focus();
+    const goBtn = el.querySelector('#vault-go');
+    if (goBtn) goBtn.onclick = ev => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } tryUnlock(); };
+    const recBtn = el.querySelector('#vault-recover');
+    if (recBtn) recBtn.onclick = ev => {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      const p = document.getElementById('vault-pass');
+      if (p) { p.type = 'text'; p.placeholder = 'Recovery key — XXXX XXXX XXXX …'; p.focus(); }
+      const note = document.getElementById('vault-msg');
+      if (note) note.textContent = 'Enter the recovery key issued when you set the passphrase.';
     };
   }
+
+  /* one delegated handler — survives any re-render of the lock screen */
+  window.addEventListener('input', e => {
+    if (e.target && e.target.id === 'vault-pass') typed = e.target.value;
+  }, true);
+
+  window.addEventListener('click', async e => {
+    const go = e.target.closest('#vault-go');
+    const rec = e.target.closest('#vault-recover');
+    if (!go && !rec) return;
+    const pass = document.getElementById('vault-pass');
+    const note = document.getElementById('vault-msg');
+    const msg = t => { if (note) note.textContent = t || ''; };
+    if (rec) {
+      if (pass) { pass.type = 'text'; pass.placeholder = 'Recovery key — XXXX XXXX XXXX …'; pass.focus(); }
+      msg('Enter the recovery key issued when you set the passphrase.');
+      return;
+    }
+    const v = (pass && pass.value.trim()) || typed;
+    if (!v) { msg('Enter your passphrase.'); return; }
+    msg('Decrypting…');
+    const ok = await unlockWith(v);
+    if (!ok) { msg('That passphrase does not open this vault.'); if (pass) pass.select(); return; }
+    typed = '';
+    const el = document.getElementById('vault-lock');
+    if (el) el.remove();
+    await resume();
+  }, true);
+
+  window.addEventListener('keydown', async e => {
+    if (e.key !== 'Enter') return;
+    if (!document.getElementById('vault-lock')) return;
+    const go = document.getElementById('vault-go');
+    if (go) go.click();
+  }, true);
 
   async function unlockWith(passphrase) {
     const m = meta();
@@ -2748,6 +2815,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const check = await open(k, m.canary);
       if (check !== 'remedy-finder-vault') return false;
       key = k;
+      restartIdle();
       return true;
     } catch (e) { return false; }
   }
@@ -2818,8 +2886,25 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
 
   U.vaultLock = function () {
     key = null;
+    stopIdle();
     lockScreen('Locked. Enter your passphrase to continue.');
   };
+
+  /* ---------- auto-lock after idle ---------- */
+  let idleT = null;
+  const IDLE_KEY = 'autolock';
+  U.idleMinutes = function () { const m = H.St.g(IDLE_KEY, 5); return m === 0 ? 0 : m; };
+  U.setIdleMinutes = function (m) { H.St.s(IDLE_KEY, m); restartIdle(); this.vaultPanel(); };
+  function stopIdle() { clearTimeout(idleT); idleT = null; }
+  function restartIdle() {
+    stopIdle();
+    if (!isOn() || !key) return;
+    const mins = U.idleMinutes();
+    if (!mins) return;
+    idleT = setTimeout(() => { U.vaultLock(); }, mins * 60000);
+  }
+  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev =>
+    window.addEventListener(ev, () => { if (key) restartIdle(); }, { passive: true }));
 
   /* ---------- panel ---------- */
   U.vaultPanel = function () {
@@ -2835,6 +2920,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
           <div class="offrow"><span>Protected stores</span><b>clinic · cases · packs</b></div>
           <div class="offrow"><span>Session</span><b>${on ? (isUnlocked() ? 'unlocked' : 'locked') : '—'}</b></div>
         </div>
+        ${on ? `<div class="langrow" style="margin-top:12px"><span>Auto-lock</span>
+          ${[1, 5, 15, 0].map(m => `<button class="btn bg btn-sm ${this.idleMinutes() === m ? 'on' : ''}" data-idle="${m}">${m ? m + ' min' : 'never'}</button>`).join('')}
+        </div>` : ''}
         <div class="xm" style="margin-top:14px">
           ${on ? `<button class="btn bp" id="v-lock">Lock now</button>
                   <button class="btn bg" id="v-off">Turn encryption off</button>`
@@ -2846,6 +2934,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       </div>`;
     this.om();
     $('mc').onclick = () => this.cm();
+    document.querySelectorAll('[data-idle]').forEach(b => b.addEventListener('click', () => this.setIdleMinutes(parseInt(b.dataset.idle, 10))));
     const on2 = $('v-on'); if (on2) on2.onclick = () => this.vaultSetup();
     const lk = $('v-lock'); if (lk) lk.onclick = () => { this.cm(); this.vaultLock(); };
     const off = $('v-off'); if (off) off.onclick = () => this.vaultDisable();
@@ -2857,6 +2946,8 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (isOn() && !key) { lockScreen(); return; }
     return baseInit.call(this);
   };
+
+  window.__vault = { unlockWith, isOn, isUnlocked, meta, get typed() { return typed; } };
 
   /* tools tile */
   const baseTools = U.toolsSheet;

@@ -1,5 +1,24 @@
 # Changelog
 
+## 13.11.0 — 2026-11-11
+
+The small things that make an offline vault usable day to day.
+
+### Added
+- **Auto-lock.** With a vault enabled the app locks itself after 1, 5 or 15 minutes
+  idle (or never). Any pointer, key, wheel or touch resets the timer; unlocking
+  restarts it.
+- **Pack checksums.** Exported packs carry a SHA-256 of their remedies; importing a
+  file whose checksum does not match is refused with "the file was modified".
+- **Backup delta.** The offline panel now reports how many records are newer than the
+  last backup, so "3 since backup" is visible without opening anything.
+
+### Fixed
+- Lock screen could be re-rendered while a passphrase was being typed, clearing the
+  input; the screen is now idempotent and the typed value is buffered until unlock.
+- Enter key and the recovery-key button now share one unlock path instead of two
+  that could disagree.
+
 ## 13.10.0 — 2026-11-11
 
 Encryption at rest. The last piece of the offline story: a stolen device should not be
