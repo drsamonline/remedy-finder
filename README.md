@@ -5,7 +5,7 @@
 **An offline homeopathic repertory workbench — not another symptom search box.**
 
 [![Live app](https://img.shields.io/badge/live%20app-drsamonline.github.io%2Fremedy--finder-0f766e?style=flat-square)](https://drsamonline.github.io/remedy-finder/)
-[![Single file](https://img.shields.io/badge/single%20file-908%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
+[![Single file](https://img.shields.io/badge/single%20file-912%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
 [![No dependencies](https://img.shields.io/badge/dependencies-0-2f6b3d?style=flat-square)](#architecture)
 [![Offline](https://img.shields.io/badge/offline-first-f6f4ef?style=flat-square)](#offline-and-install)
 [![Remedies](https://img.shields.io/badge/remedies-297-1a1a17?style=flat-square)](#the-data)
@@ -83,7 +83,7 @@ Full provenance: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 | Route | How |
 |---|---|
-| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (908 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
+| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (912 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
 | **PWA** | Open the [live app](https://drsamonline.github.io/remedy-finder/) and use *Install* / *Add to Home Screen*. A service worker caches everything; it then works with the network off. |
 | **Windows** | Tagged releases attach a portable launcher produced by CI ([`build-exe.yml`](.github/workflows/build-exe.yml)). |
 | **Android** | Install the PWA (above), or wrap the live URL into an APK with PWABuilder — see [docs/PACKAGING.md](docs/PACKAGING.md). |
@@ -103,6 +103,7 @@ explicit durability layer:
 | **Download everything for offline** | Pre-caches the shell *and* the repertory file, so Repertory mode works with the network off. |
 | **Readiness panel** | Service-worker state, cached file count and size, whether the repertory is available offline, record counts, and days since last backup. |
 | **Backup reminder** | A dismissible banner appears when records exist and the last backup is over seven days old. |
+| **Transfer codes** | Move a single case between devices as one encrypted text code (PIN-protected, ~480 characters) — copy on one, paste on the other. No network, no account |
 | **Delta backup** | After a full backup, "Backup changes only" writes just the records that changed since — with deletions recorded too, and restored as a merge |
 | **Backup history** | The last ten backups, with date, record count and size, plus **how many records changed since the last backup**. |
 | **Encryption at rest** | Optional passphrase. Clinic cases, saved repertorisations and packs are stored as AES‑256‑GCM ciphertext; the key lives in memory only. A lock screen on start, auto-lock after 1/5/15 minutes idle, a one-time recovery key, and a "turn off" path that decrypts everything back to plain text. |
@@ -116,7 +117,7 @@ its ranking.
 
 | | `remedy-finder.html` | `remedy-finder-full.html` |
 |---|---|---|
-| Size | 908 KB | 3.1 MB |
+| Size | 912 KB | 3.1 MB |
 | Curated symptoms (634) | yes | yes |
 | Full repertory search (31,667 rubrics) | no — the mode tells you so | yes |
 | Load time | instant | repertory index builds in ~0.3 s on first use |

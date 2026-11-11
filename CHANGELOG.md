@@ -1,5 +1,20 @@
 # Changelog
 
+## 13.13.0 — 2026-11-11
+
+Moving one case between your own devices, without a server.
+
+### Added
+- **Transfer codes.** Pick a case, choose a PIN, and get a ~480-character code
+  (`RF1.<salt>.<iv>.<ciphertext>`, AES‑256‑GCM, PBKDF2 60,000 rounds). Paste it on the
+  other device, enter the PIN, preview, and the case is saved there with its original
+  data edition recorded. Wrong PIN fails closed.
+- Transfer panel lists recent cases, with copy and paste fields sized for a phone.
+
+### Notes
+- A 4-character PIN protects a code that is meant to be handed over in person. The code
+  itself is worthless without the PIN, but do not send both through the same channel.
+
 ## 13.12.0 — 2026-11-11
 
 Frequent small backups instead of occasional large ones.
