@@ -9,7 +9,7 @@ The repertory was thinner than it needed to be.
   carrying at least three of the app's remedies; the source data supports two. A rubric
   with two remedies discriminates *better* than one with twenty, so the filter was
   excluding the sharpest material: 9,353 of the added rubrics are two-remedy rubrics.
-- Repertory file 2.1 MB → 2.75 MB; full single-file build 3.1 MB → 3.4 MB.
+- Repertory file 2.1 MB → 2.75 MB; full single-file build 3.1 MB → 3.7 MB.
 
 ### Fixed while rebuilding
 - Link encoding is `index × 3 + (grade − 1)` in base 36, not `× 4`. Encoding at ×4

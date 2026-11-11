@@ -121,7 +121,7 @@ its ranking.
 
 | | `remedy-finder.html` | `remedy-finder-full.html` |
 |---|---|---|
-| Size | 947 KB | 3.4 MB |
+| Size | 947 KB | 3.7 MB |
 | Curated symptoms (634) | yes | yes |
 | Full repertory search (39,737 rubrics) | no — the mode tells you so | yes |
 | Load time | instant | repertory index builds in ~0.3 s on first use |
