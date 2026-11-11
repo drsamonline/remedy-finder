@@ -19,6 +19,7 @@ jobs:
           node --check site/assets/app.js
           node --check site/assets/ui.js
           node --check site/assets/offline.js
+          node --check site/assets/packs.js
           node --check site/assets/data.js
           node --check site/assets/i18n.js
           node --check site/assets/repertory.js

@@ -1,5 +1,23 @@
 # Changelog
 
+## 13.9.0 — 2026-11-11
+
+Extensibility without a server.
+
+### Added
+- **Data packs.** A pack is one JSON file (`{format:"rf-pack", v:1, remedies:{CODE:[…]}}`).
+  Import adds remedies, re-scores them and rebuilds the indexes; export dumps the current
+  data as a pack. Packs are validated against this app's symptom IDs, so a pack can add
+  remedies but never invent symptoms. Stored in IndexedDB and re-applied on load; clearing
+  the list removes them on next reload.
+- **Rubrics in text search.** The Text mode now returns repertory rubrics alongside
+  materia medica passages, selectable straight into the case.
+- IndexedDB schema v3 with a `packs` store.
+
+### Fixed
+- Remedy search cache was not invalidated after adding a pack, so a newly added remedy
+  was invisible to search until reload.
+
 ## 13.8.0 — 2026-11-11
 
 Two offline additions: reading the books without a book, and a record of your backups.

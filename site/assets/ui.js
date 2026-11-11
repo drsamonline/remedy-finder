@@ -27,6 +27,8 @@
   U.rubricFor = function (sid) { return RB()[sid] || null; };
 
   let _remIdx = null;
+  U.invalidateCaches = function () { _remIdx = null; this._freq = null; this._txt = null; };
+
   U.remedyIndex = function () {
     if (_remIdx) return _remIdx;
     _remIdx = Object.entries(H.DB.remedies).map(([code, r]) => ({
@@ -289,9 +291,19 @@
       return;
     }
     const hits = this.searchText(q);
-    if (!hits.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No text matches “${esc(q)}”.</div></div>`; return; }
+    const rub = (window.HRF_RUB && this.rubIndex) ? this.searchRubrics(q).slice(0, 8) : [];
+    if (!hits.length && !rub.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No text matches “${esc(q)}”.</div></div>`; return; }
     const fieldName = { description: 'description', quote: 'source', quote2: 'source', clinical: 'clinical' };
-    host.innerHTML = `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Text matches</span>
+    const rubBlock = rub.length ? `<div class="ss open" data-cat="__rub"><button class="sh" aria-expanded="true" type="button">
+        <span>Repertory rubrics</span><span class="ct">${rub.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+      <div class="sl">${rub.map(i => {
+        const r = this.rubIndex[i];
+        const on = this.rubSel.has(i);
+        return `<div class="sc rb-row ${on ? 'sel' : ''}" data-rub="${i}" role="checkbox" aria-checked="${on}" tabindex="0">
+          <input type="checkbox" ${on ? 'checked' : ''} tabindex="-1" aria-hidden="true">
+          <span>${esc(r.p)}</span><span class="n">${r.n}</span></div>`;
+      }).join('')}</div></div>` : '';
+    host.innerHTML = rubBlock + `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Text matches</span>
         <span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
       <div class="sl">${hits.map(h => {
         const r = H.DB.remedies[h.code];

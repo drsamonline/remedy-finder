@@ -5,7 +5,7 @@
 **An offline homeopathic repertory workbench — not another symptom search box.**
 
 [![Live app](https://img.shields.io/badge/live%20app-drsamonline.github.io%2Fremedy--finder-0f766e?style=flat-square)](https://drsamonline.github.io/remedy-finder/)
-[![Single file](https://img.shields.io/badge/single%20file-876%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
+[![Single file](https://img.shields.io/badge/single%20file-886%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
 [![No dependencies](https://img.shields.io/badge/dependencies-0-2f6b3d?style=flat-square)](#architecture)
 [![Offline](https://img.shields.io/badge/offline-first-f6f4ef?style=flat-square)](#offline-and-install)
 [![Remedies](https://img.shields.io/badge/remedies-297-1a1a17?style=flat-square)](#the-data)
@@ -36,7 +36,8 @@ Most remedy finders are a search box over a list. A repertory is not a list — 
 | **Repertorise** | 634 symptoms in 17 chapters, 5 quick packs, typo-tolerant search, live ranking in a Web Worker |
 | **Remedy search** | The search box also finds remedies by name, Latin name, clinical use and family — one click opens the monograph |
 | **Pin & watch** | Pin up to three remedies and change the symptoms around them; the pinned strip keeps showing each remedy’s live rank and score |
-| **Text search** | A third picker mode searches the materia medica itself — descriptions, quoted sources and clinical uses across 297 monographs — with highlighted snippets and one click to the monograph |
+| **Data packs** | Import a JSON pack to add remedies offline (validated against this app's symptom IDs), or export the current data as a pack. Packs persist in IndexedDB and re-apply on load |
+| **Text search** | A third picker mode searches the materia medica itself — descriptions, both quoted sources and clinical uses — plus the repertory rubric paths, with highlighted snippets and one click to the monograph |
 | **Full repertory** | A second picker mode: search **31,667 rubrics** from Repertorium Publicum by words — *fear of death*, *thirst small*, *worse consolation* — and repertorise directly on rubrics, alone or mixed with curated symptoms |
 | **Boards** | Keep several rubric sets inside one case — acute picture, constitutional picture, family history — switch between them, and compare their rankings side by side |
 | **Interface languages** | English, हिंदी and ગુજરાતી for the finder, results and tools. Repertory terms stay in English — they are the vocabulary of the source books |
@@ -82,7 +83,7 @@ Full provenance: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 | Route | How |
 |---|---|
-| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (876 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
+| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (886 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
 | **PWA** | Open the [live app](https://drsamonline.github.io/remedy-finder/) and use *Install* / *Add to Home Screen*. A service worker caches everything; it then works with the network off. |
 | **Windows** | Tagged releases attach a portable launcher produced by CI ([`build-exe.yml`](.github/workflows/build-exe.yml)). |
 | **Android** | Install the PWA (above), or wrap the live URL into an APK with PWABuilder — see [docs/PACKAGING.md](docs/PACKAGING.md). |
@@ -113,7 +114,7 @@ its ranking.
 
 | | `remedy-finder.html` | `remedy-finder-full.html` |
 |---|---|---|
-| Size | 876 KB | 3.0 MB |
+| Size | 886 KB | 3.0 MB |
 | Curated symptoms (634) | yes | yes |
 | Full repertory search (31,667 rubrics) | no — the mode tells you so | yes |
 | Load time | instant | repertory index builds in ~0.3 s on first use |
