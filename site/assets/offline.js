@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.15.0';
+  U.appVersion = '13.16.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -344,6 +344,55 @@
     this.toast(`${cases.length} case${cases.length > 1 ? 's' : ''} in one code — ${code.length} characters`);
   };
 
+  /* ---------- camera scan (BarcodeDetector) ---------- */
+  U.scanSupported = function () {
+    return !!(window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  };
+
+  U.stopScan = function () {
+    if (this._scanTimer) { clearInterval(this._scanTimer); this._scanTimer = null; }
+    if (this._scanStream) { this._scanStream.getTracks().forEach(t => t.stop()); this._scanStream = null; }
+    const v = document.getElementById('tf-video');
+    if (v) v.remove();
+  };
+
+  U.startScan = async function () {
+    const host = document.getElementById('tf-scan');
+    if (!host) return;
+    if (!this.scanSupported()) {
+      host.innerHTML = '<p class="srcl">This browser cannot scan — paste the code instead.</p>';
+      return;
+    }
+    host.innerHTML = '<p class="srcl">Starting camera…</p>';
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch (e) {
+      host.innerHTML = '<p class="srcl">Camera not available or permission refused — paste the code instead.</p>';
+      return;
+    }
+    this._scanStream = stream;
+    host.innerHTML = '<video id="tf-video" class="tf-video" autoplay playsinline muted></video><p class="srcl">Point at the QR code.</p>';
+    const video = document.getElementById('tf-video');
+    try { video.srcObject = stream; } catch (e) {}
+    try { const p = video.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+    const det = new window.BarcodeDetector({ formats: ['qr_code'] });
+    this._scanTimer = setInterval(async () => {
+      if (!document.getElementById('tf-video')) { this.stopScan(); return; }
+      try {
+        const found = await det.detect(video);
+        if (found && found.length && found[0].rawValue) {
+          const text = found[0].rawValue;
+          this.stopScan();
+          const input = document.getElementById('tf-in');
+          if (input) { input.value = text; this.toast('Code scanned — enter the PIN'); }
+          const read = document.getElementById('tf-read');
+          if (read) read.click();
+        }
+      } catch (e) { /* keep polling */ }
+    }, 350);
+  };
+
   U.transferPanel = async function () {
     const cases = await H.Clinic.all();
     const m = $('md');
@@ -365,13 +414,17 @@
           <div class="qrbox" id="tf-qr"></div>
         </div>
         <div class="msec" style="margin-top:14px"><h4>Receive a code</h4>
+          <div class="xm" style="margin-bottom:8px">
+            <button class="btn bg btn-sm" id="tf-scan-btn" ${this.scanSupported() ? '' : 'disabled title="This browser cannot scan"'}>Scan with camera</button>
+          </div>
+          <div id="tf-scan"></div>
           <textarea id="tf-in" rows="3" placeholder="Paste a transfer code"></textarea>
           <div class="xm" style="margin-top:8px"><button class="btn bp btn-sm" id="tf-read">Read code</button></div>
           <p class="srcl" style="margin-top:6px">You will be asked for the PIN the sender chose.</p>
         </div>
       </div>`;
     this.om();
-    $('mc').onclick = () => this.cm();
+    $('mc').onclick = () => { this.stopScan(); this.cm(); };
     document.querySelectorAll('[data-mk]').forEach(b => b.addEventListener('click', async () => {
       const c = await H.Clinic.get(b.dataset.mk);
       if (!c) return this.toast('Case not found');
@@ -410,6 +463,8 @@
       const t = $('tf-out'); if (!t.value) return this.toast('Nothing to save yet');
       H.Ex.dl(`remedy-finder-transfer-${new Date().toISOString().slice(0, 10)}.rfc.txt`, t.value, 'text/plain');
     };
+    const scanBtn = $('tf-scan-btn');
+    if (scanBtn) scanBtn.onclick = () => this.startScan();
     $('tf-read').onclick = async () => {
       const raw = $('tf-in').value.trim();
       if (!raw) return this.toast('Paste a code first');

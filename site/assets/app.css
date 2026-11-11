@@ -506,6 +506,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
 @media (max-width:520px){.offgrid{grid-template-columns:1fr auto}}
 
 /* ---------------- transfer ---------------- */
+.tf-video{width:100%;max-width:340px;border-radius:12px;background:#000;display:block;margin:0 auto 8px}
 .qrbox{display:grid;place-items:center;gap:6px;margin-top:12px}
 .qrcanvas{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;image-rendering:pixelated;max-width:100%}
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## 13.16.0 — 2026-11-11
+
+Receiving a case, without typing anything.
+
+### Added
+- **Camera scanning.** The transfer panel can read a QR with the device camera
+  (`BarcodeDetector` + `getUserMedia`), fill the code field and go straight to the PIN.
+  The stream is stopped as soon as a code is read, and again when the panel closes.
+- Graceful absence: where the browser cannot scan, the button is disabled and the paste
+  field remains the way in.
+
+### Fixed
+- `video.play()` was awaited before starting detection; with a slow or blocked camera
+  that promise never settles and the scanner silently never started.
+
 ## 13.15.0 — 2026-11-11
 
 The last offline gap: get a case across without typing 476 characters.
