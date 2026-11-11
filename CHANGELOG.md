@@ -1,5 +1,20 @@
 # Changelog
 
+## 13.8.0 — 2026-11-11
+
+Two offline additions: reading the books without a book, and a record of your backups.
+
+### Added
+- **Text search mode.** A third picker mode searches the materia medica text itself —
+  descriptions, both quoted sources and clinical uses across 297 monographs — matching
+  all words in any field, scoring source matches higher, and showing a highlighted
+  snippet with one click to the monograph. 898 searchable fields, built in memory in
+  under 20 ms.
+- **Backup history.** The offline panel lists the last ten backups with date, total
+  record count and file size.
+- Hero statistics on the start panel now read from the live database instead of being
+  hard-coded.
+
 ## 13.7.0 — 2026-11-11
 
 Offline durability, part two: make the backup trustworthy rather than merely present.

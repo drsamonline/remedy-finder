@@ -117,7 +117,9 @@
     this.pickerMode = m;
     document.querySelectorAll('[data-picker]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.picker === m)));
     const si = $('search');
-    if (si) si.placeholder = m === 'rubrics' ? 'Search rubrics — fear of death, thirst small, worse consolation' : this.t('search');
+    if (si) si.placeholder = m === 'rubrics' ? 'Search rubrics — fear of death, thirst small, worse consolation'
+      : m === 'text' ? 'Search the text — burning midnight, left side cold'
+      : this.t('search');
     if (m === 'rubrics') this.loadRepertory(() => this.rs());
     this.rs();
   };
@@ -239,6 +241,66 @@
     return r;
   };
 
+  /* ---------- full-text search over materia medica ---------- */
+  U.textIndex = function () {
+    if (this._txt) return this._txt;
+    this._txt = Object.entries(H.DB.remedies).map(([code, r]) => {
+      const f = {
+        description: r.description || '',
+        quote: r.quote || '',
+        quote2: r.quote2 || '',
+        clinical: (r.clinicals || []).join(', ')
+      };
+      const all = [f.description, f.quote, f.quote2, f.clinical].filter(Boolean).join('  ·  ');
+      return { code, f, all, low: all.toLowerCase() };
+    });
+    return this._txt;
+  };
+
+  U.searchText = function (q) {
+    const words = q.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+    if (!words.length) return [];
+    const hits = [];
+    this.textIndex().forEach(doc => {
+      if (!words.every(w => doc.low.includes(w))) return;
+      let score = 0;
+      words.forEach(w => {
+        if (doc.f.quote.toLowerCase().includes(w) || doc.f.quote2.toLowerCase().includes(w)) score += 2;
+        else score += 1;
+      });
+      const first = Math.min(...words.map(w => doc.low.indexOf(w)).filter(i => i >= 0));
+      const start = Math.max(0, first - 70);
+      const snip = (start > 0 ? '…' : '') + doc.all.slice(start, first + 160).trim() + (doc.all.length > first + 160 ? '…' : '');
+      const field = doc.f.quote.toLowerCase().includes(words[0]) || doc.f.quote2.toLowerCase().includes(words[0])
+        ? 'source' : (doc.f.description.toLowerCase().includes(words[0]) ? 'description' : 'clinical');
+      hits.push({ code: doc.code, field, snippet: snip, score });
+    });
+    return hits.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code)).slice(0, 80);
+  };
+
+  U.rsText = function () {
+    const host = $('symptoms');
+    if (!host) return;
+    const q = (this.s.q || '').trim();
+    if (q.length < 3) {
+      host.innerHTML = `<div class="emp"><div class="emp-i">${ic('find','i-lg')}</div>
+        <div>Search the materia medica text itself — <em>burning midnight</em>, <em>left side cold</em>, <em>worse consolation</em>.</div>
+        <div class="srcl" style="margin-top:6px">297 monographs · descriptions, quoted sources and clinical uses · all on this device.</div></div>`;
+      return;
+    }
+    const hits = this.searchText(q);
+    if (!hits.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No text matches “${esc(q)}”.</div></div>`; return; }
+    const fieldName = { description: 'description', quote: 'source', quote2: 'source', clinical: 'clinical' };
+    host.innerHTML = `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Text matches</span>
+        <span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+      <div class="sl">${hits.map(h => {
+        const r = H.DB.remedies[h.code];
+        return `<div class="sc txt-row" data-rem="${h.code}" role="button" tabindex="0">
+          <span><b>${esc(r.name)}</b><em class="lt">${esc(fieldName[h.field] || h.field)}</em>
+          <span class="snip">${this.hl(esc(h.snippet), q)}</span></span></div>`;
+      }).join('')}</div></div>`;
+  };
+
   U.searchRubrics = function (q) {
     if (!this.rubIndex) return [];
     const SYN = { worse: ['agg'], better: ['amel'], worseat: ['agg'], aggravated: ['agg'], relieved: ['amel'], relief: ['amel'] };
@@ -346,6 +408,7 @@
   /* ---------- symptom picker ---------- */
   U.rs = function () {
     if (this.pickerMode === 'rubrics') return this.rsRubrics();
+    if (this.pickerMode === 'text') return this.rsText();
     const host = $('symptoms');
     if (!host) return;
     const S = H.DB.symptoms, q = (this.s.q || '').toLowerCase().trim();
@@ -896,9 +959,17 @@
     this.applyLang();
     this.renderBoards();
     this.renderBoardBar();
+    this.refreshStats();
   };
 
   U.renderBoardBar = function () { this.renderBoards(); };
+
+  U.refreshStats = function () {
+    const nums = document.querySelectorAll('#rv .stat-num');
+    if (!nums.length || !H.DB) return;
+    const vals = [H.DB.remedyCount, H.DB.count, (H.DB.links / 1000).toFixed(1) + 'k', '2008'];
+    nums.forEach((el, i) => { if (vals[i] !== undefined) el.textContent = vals[i]; });
+  };
 
   /* ---------- theme hook ---------- */
   const baseUt = U.ut;

@@ -5,7 +5,7 @@
 **An offline homeopathic repertory workbench — not another symptom search box.**
 
 [![Live app](https://img.shields.io/badge/live%20app-drsamonline.github.io%2Fremedy--finder-0f766e?style=flat-square)](https://drsamonline.github.io/remedy-finder/)
-[![Single file](https://img.shields.io/badge/single%20file-872%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
+[![Single file](https://img.shields.io/badge/single%20file-876%20KB-0d9488?style=flat-square)](dist/remedy-finder.html)
 [![No dependencies](https://img.shields.io/badge/dependencies-0-2f6b3d?style=flat-square)](#architecture)
 [![Offline](https://img.shields.io/badge/offline-first-f6f4ef?style=flat-square)](#offline-and-install)
 [![Remedies](https://img.shields.io/badge/remedies-297-1a1a17?style=flat-square)](#the-data)
@@ -36,6 +36,7 @@ Most remedy finders are a search box over a list. A repertory is not a list — 
 | **Repertorise** | 634 symptoms in 17 chapters, 5 quick packs, typo-tolerant search, live ranking in a Web Worker |
 | **Remedy search** | The search box also finds remedies by name, Latin name, clinical use and family — one click opens the monograph |
 | **Pin & watch** | Pin up to three remedies and change the symptoms around them; the pinned strip keeps showing each remedy’s live rank and score |
+| **Text search** | A third picker mode searches the materia medica itself — descriptions, quoted sources and clinical uses across 297 monographs — with highlighted snippets and one click to the monograph |
 | **Full repertory** | A second picker mode: search **31,667 rubrics** from Repertorium Publicum by words — *fear of death*, *thirst small*, *worse consolation* — and repertorise directly on rubrics, alone or mixed with curated symptoms |
 | **Boards** | Keep several rubric sets inside one case — acute picture, constitutional picture, family history — switch between them, and compare their rankings side by side |
 | **Interface languages** | English, हिंदी and ગુજરાતી for the finder, results and tools. Repertory terms stay in English — they are the vocabulary of the source books |
@@ -81,7 +82,7 @@ Full provenance: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 | Route | How |
 |---|---|
-| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (872 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
+| **Single file** | [`dist/remedy-finder.html`](dist/remedy-finder.html) (876 KB) — curated symptoms. [`dist/remedy-finder-full.html`](dist/remedy-finder-full.html) (3.0 MB) — same app plus the complete repertory. Double-click either; no server, no install, works from a USB stick. |
 | **PWA** | Open the [live app](https://drsamonline.github.io/remedy-finder/) and use *Install* / *Add to Home Screen*. A service worker caches everything; it then works with the network off. |
 | **Windows** | Tagged releases attach a portable launcher produced by CI ([`build-exe.yml`](.github/workflows/build-exe.yml)). |
 | **Android** | Install the PWA (above), or wrap the live URL into an APK with PWABuilder — see [docs/PACKAGING.md](docs/PACKAGING.md). |
@@ -101,6 +102,7 @@ explicit durability layer:
 | **Download everything for offline** | Pre-caches the shell *and* the repertory file, so Repertory mode works with the network off. |
 | **Readiness panel** | Service-worker state, cached file count and size, whether the repertory is available offline, record counts, and days since last backup. |
 | **Backup reminder** | A dismissible banner appears when records exist and the last backup is over seven days old. |
+| **Backup history** | The last ten backups, with date, record count and size, listed in the offline panel. |
 | **Connection chip** | Top bar shows `offline-ready` / `offline` / `local file`, and updates as the connection changes. |
 
 Every saved repertorisation is stamped with the **data edition** it was scored against
@@ -111,7 +113,7 @@ its ranking.
 
 | | `remedy-finder.html` | `remedy-finder-full.html` |
 |---|---|---|
-| Size | 872 KB | 3.0 MB |
+| Size | 876 KB | 3.0 MB |
 | Curated symptoms (634) | yes | yes |
 | Full repertory search (31,667 rubrics) | no — the mode tells you so | yes |
 | Load time | instant | repertory index builds in ~0.3 s on first use |

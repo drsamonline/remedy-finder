@@ -130,6 +130,12 @@ mark{background:var(--gold-soft);color:var(--ink);font-weight:600;border-radius:
 .pm:hover:not([aria-selected="true"]){background:var(--surface-2);color:var(--ink)}
 .sc.rb-row span:nth-child(2){font-size:12.5px;line-height:1.35}
 .sc.rb-row .n{background:var(--accent-soft);color:var(--accent)}
+.sc.txt-row{align-items:flex-start;padding:10px 10px}
+.sc.txt-row>span{display:block;min-width:0}
+.sc.txt-row b{font-size:13px}
+.sc.txt-row .lt{display:inline;font-size:10.5px;color:var(--ink-3);margin-left:6px;font-style:normal;text-transform:uppercase;letter-spacing:.05em}
+.sc.txt-row .snip{display:block;font-size:11.5px;color:var(--ink-2);line-height:1.45;margin-top:3px}
+.sc.txt-row mark{background:var(--gold-soft);color:var(--ink);font-weight:700}
 .trc-chip.rbchip{background:var(--gold-soft);border-color:color-mix(in srgb,var(--gold) 30%,transparent);color:var(--gold)}
 .trc-chip.rbchip em{font-style:normal;font-weight:800;font-size:9.5px;background:color-mix(in srgb,var(--gold) 22%,transparent);
  border-radius:4px;padding:1px 4px;margin-right:2px}
@@ -567,7 +573,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v13.7</div>
+          <div class="bsub">Repertory workbench · v13.8</div>
         </div>
       </div>
       <label class="casebar">
@@ -591,6 +597,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="modeswitch" role="tablist" aria-label="Picker mode">
           <button class="pm" role="tab" data-picker="symptoms" aria-selected="true">Symptoms</button>
           <button class="pm" role="tab" data-picker="rubrics" aria-selected="false">Repertory</button>
+          <button class="pm" role="tab" data-picker="text" aria-selected="false">Text</button>
         </div>
         <div class="boards" id="boards" role="group" aria-label="Boards"></div>
         <div class="searchrow">
@@ -1052,7 +1059,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     this.pickerMode = m;
     document.querySelectorAll('[data-picker]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.picker === m)));
     const si = $('search');
-    if (si) si.placeholder = m === 'rubrics' ? 'Search rubrics — fear of death, thirst small, worse consolation' : this.t('search');
+    if (si) si.placeholder = m === 'rubrics' ? 'Search rubrics — fear of death, thirst small, worse consolation'
+      : m === 'text' ? 'Search the text — burning midnight, left side cold'
+      : this.t('search');
     if (m === 'rubrics') this.loadRepertory(() => this.rs());
     this.rs();
   };
@@ -1174,6 +1183,66 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     return r;
   };
 
+  /* ---------- full-text search over materia medica ---------- */
+  U.textIndex = function () {
+    if (this._txt) return this._txt;
+    this._txt = Object.entries(H.DB.remedies).map(([code, r]) => {
+      const f = {
+        description: r.description || '',
+        quote: r.quote || '',
+        quote2: r.quote2 || '',
+        clinical: (r.clinicals || []).join(', ')
+      };
+      const all = [f.description, f.quote, f.quote2, f.clinical].filter(Boolean).join('  ·  ');
+      return { code, f, all, low: all.toLowerCase() };
+    });
+    return this._txt;
+  };
+
+  U.searchText = function (q) {
+    const words = q.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+    if (!words.length) return [];
+    const hits = [];
+    this.textIndex().forEach(doc => {
+      if (!words.every(w => doc.low.includes(w))) return;
+      let score = 0;
+      words.forEach(w => {
+        if (doc.f.quote.toLowerCase().includes(w) || doc.f.quote2.toLowerCase().includes(w)) score += 2;
+        else score += 1;
+      });
+      const first = Math.min(...words.map(w => doc.low.indexOf(w)).filter(i => i >= 0));
+      const start = Math.max(0, first - 70);
+      const snip = (start > 0 ? '…' : '') + doc.all.slice(start, first + 160).trim() + (doc.all.length > first + 160 ? '…' : '');
+      const field = doc.f.quote.toLowerCase().includes(words[0]) || doc.f.quote2.toLowerCase().includes(words[0])
+        ? 'source' : (doc.f.description.toLowerCase().includes(words[0]) ? 'description' : 'clinical');
+      hits.push({ code: doc.code, field, snippet: snip, score });
+    });
+    return hits.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code)).slice(0, 80);
+  };
+
+  U.rsText = function () {
+    const host = $('symptoms');
+    if (!host) return;
+    const q = (this.s.q || '').trim();
+    if (q.length < 3) {
+      host.innerHTML = `<div class="emp"><div class="emp-i">${ic('find','i-lg')}</div>
+        <div>Search the materia medica text itself — <em>burning midnight</em>, <em>left side cold</em>, <em>worse consolation</em>.</div>
+        <div class="srcl" style="margin-top:6px">297 monographs · descriptions, quoted sources and clinical uses · all on this device.</div></div>`;
+      return;
+    }
+    const hits = this.searchText(q);
+    if (!hits.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No text matches “${esc(q)}”.</div></div>`; return; }
+    const fieldName = { description: 'description', quote: 'source', quote2: 'source', clinical: 'clinical' };
+    host.innerHTML = `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Text matches</span>
+        <span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+      <div class="sl">${hits.map(h => {
+        const r = H.DB.remedies[h.code];
+        return `<div class="sc txt-row" data-rem="${h.code}" role="button" tabindex="0">
+          <span><b>${esc(r.name)}</b><em class="lt">${esc(fieldName[h.field] || h.field)}</em>
+          <span class="snip">${this.hl(esc(h.snippet), q)}</span></span></div>`;
+      }).join('')}</div></div>`;
+  };
+
   U.searchRubrics = function (q) {
     if (!this.rubIndex) return [];
     const SYN = { worse: ['agg'], better: ['amel'], worseat: ['agg'], aggravated: ['agg'], relieved: ['amel'], relief: ['amel'] };
@@ -1281,6 +1350,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   /* ---------- symptom picker ---------- */
   U.rs = function () {
     if (this.pickerMode === 'rubrics') return this.rsRubrics();
+    if (this.pickerMode === 'text') return this.rsText();
     const host = $('symptoms');
     if (!host) return;
     const S = H.DB.symptoms, q = (this.s.q || '').toLowerCase().trim();
@@ -1831,9 +1901,17 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     this.applyLang();
     this.renderBoards();
     this.renderBoardBar();
+    this.refreshStats();
   };
 
   U.renderBoardBar = function () { this.renderBoards(); };
+
+  U.refreshStats = function () {
+    const nums = document.querySelectorAll('#rv .stat-num');
+    if (!nums.length || !H.DB) return;
+    const vals = [H.DB.remedyCount, H.DB.count, (H.DB.links / 1000).toFixed(1) + 'k', '2008'];
+    nums.forEach((el, i) => { if (vals[i] !== undefined) el.textContent = vals[i]; });
+  };
 
   /* ---------- theme hook ---------- */
   const baseUt = U.ut;
@@ -1916,7 +1994,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.6.0';
+  U.appVersion = '13.8.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -1993,6 +2071,12 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const saved = await writeBackup(name, text);
       if (/cancel/i.test(saved)) { this.toast('Backup cancelled — nothing was written'); return; }
       H.St.s('lastBackup', Date.now());
+      const log = H.St.g('backupLog', []);
+      log.unshift({
+        t: Date.now(), clinic: data.stores.clinic.length, cases: data.stores.cases.length,
+        srs: (data.settings.srs || []).length, bytes: text.length, edition: data.dataVersion, where: saved
+      });
+      H.St.s('backupLog', log.slice(0, 10));
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
       this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
@@ -2197,6 +2281,10 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         <button class="btn bg" id="off-precache" ${location.protocol === 'file:' ? 'disabled title="Only needed for the web app"' : ''}>Download everything for offline</button>
         <button class="btn bg" id="off-export">Plain JSON (no passphrase)</button>
       </div>
+      ${(H.St.g('backupLog', []).length) ? `<div class="msec" style="margin-top:16px"><h4>Recent backups</h4>
+        <div class="offgrid">${H.St.g('backupLog', []).slice(0, 5).map(e =>
+          `<div class="offrow"><span>${new Date(e.t).toLocaleString()}</span>
+           <b>${e.clinic + e.cases + e.srs} records · ${Math.round(e.bytes / 1024)} KB</b></div>`).join('')}</div></div>` : ''}
       <div class="msec" style="margin-top:16px">
         <h4>What this does</h4>
         <p class="srcl">The backup is one file, encrypted on this device with AES-256-GCM and a key derived from your passphrase (PBKDF2, 150,000 rounds). There is no recovery if you lose the passphrase — that is the point. Keep the file somewhere you control: a USB stick, an SD card, your own drive.</p>

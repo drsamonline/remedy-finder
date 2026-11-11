@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.6.0';
+  U.appVersion = '13.8.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -95,6 +95,12 @@
       const saved = await writeBackup(name, text);
       if (/cancel/i.test(saved)) { this.toast('Backup cancelled — nothing was written'); return; }
       H.St.s('lastBackup', Date.now());
+      const log = H.St.g('backupLog', []);
+      log.unshift({
+        t: Date.now(), clinic: data.stores.clinic.length, cases: data.stores.cases.length,
+        srs: (data.settings.srs || []).length, bytes: text.length, edition: data.dataVersion, where: saved
+      });
+      H.St.s('backupLog', log.slice(0, 10));
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
       this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
@@ -299,6 +305,10 @@
         <button class="btn bg" id="off-precache" ${location.protocol === 'file:' ? 'disabled title="Only needed for the web app"' : ''}>Download everything for offline</button>
         <button class="btn bg" id="off-export">Plain JSON (no passphrase)</button>
       </div>
+      ${(H.St.g('backupLog', []).length) ? `<div class="msec" style="margin-top:16px"><h4>Recent backups</h4>
+        <div class="offgrid">${H.St.g('backupLog', []).slice(0, 5).map(e =>
+          `<div class="offrow"><span>${new Date(e.t).toLocaleString()}</span>
+           <b>${e.clinic + e.cases + e.srs} records · ${Math.round(e.bytes / 1024)} KB</b></div>`).join('')}</div></div>` : ''}
       <div class="msec" style="margin-top:16px">
         <h4>What this does</h4>
         <p class="srcl">The backup is one file, encrypted on this device with AES-256-GCM and a key derived from your passphrase (PBKDF2, 150,000 rounds). There is no recovery if you lose the passphrase — that is the point. Keep the file somewhere you control: a USB stick, an SD card, your own drive.</p>
