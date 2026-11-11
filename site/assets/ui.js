@@ -31,7 +31,7 @@
     if (_remIdx) return _remIdx;
     _remIdx = Object.entries(H.DB.remedies).map(([code, r]) => ({
       code, r,
-      hay: (r.name + ' ' + r.latin + ' ' + (r.clinicals || []).join(' ') + ' ' + (r.family || '')).toLowerCase()
+      hay: (r.name + ' ' + r.latin + ' ' + (r.clinicals || []).join(' ') + ' ' + (r.family || ' ') + ' ' + (r.description || '') + ' ' + (r.quote || '')).toLowerCase()
     }));
     return _remIdx;
   };
@@ -125,8 +125,49 @@
     $('trc').textContent = `${this.s.sel.size} symptom${this.s.sel.size > 1 ? 's' : ''}`;
     $('trch').innerHTML = [...this.s.sel].map(id => {
       const s = S[id];
-      return s ? `<span class="trc-chip">${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>` : '';
+      if (!s) return '';
+      const m = this.wMult(id);
+      const glyph = m === 1.5 ? '+' : (m === 0.5 ? '−' : '·');
+      const label = m === 1.5 ? 'strong' : (m === 0.5 ? 'doubtful' : 'ordinary');
+      return `<span class="trc-chip w${m === 1.5 ? ' up' : (m === 0.5 ? ' down' : '')}">
+        <button class="wt" data-wt="${id}" title="Weight: ${label} — click to change" aria-label="Weight ${label}">${glyph}</button>
+        ${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>`;
     }).join('');
+  };
+
+  /* ---------- symptom weight ---------- */
+  U.weights = {};
+  U.wMult = function (sid) { return this.weights[sid] || 1; };
+  U.cycleWeight = function (sid) {
+    const cur = this.wMult(sid);
+    const next = cur === 1 ? 1.5 : (cur === 1.5 ? 0.5 : 1);
+    if (next === 1) delete this.weights[sid]; else this.weights[sid] = next;
+    this.rt();
+    if (this.s.view === 'results') this.rr();
+  };
+  U.weightMap = function () {
+    const w = {};
+    Object.keys(this.weights).forEach(k => { if (this.s.sel.has(+k)) w[k] = this.weights[k]; });
+    return w;
+  };
+
+  /* ---------- eliminative: struck remedies ---------- */
+  U.struck = new Set();
+  U.strike = function (code) {
+    if (this.struck.has(code)) this.struck.delete(code); else this.struck.add(code);
+    if (this.s.last) this.rr();
+  };
+
+  /* ---------- undo toast ---------- */
+  U.undo = function (msg, fn) {
+    const t = $('toast');
+    if (!t) return;
+    t.innerHTML = `${esc(msg)} <button class="toast-undo" type="button">Undo</button>`;
+    t.classList.add('on');
+    clearTimeout(this._undoT);
+    const close = () => { t.classList.remove('on'); t.innerHTML = ''; t.onclick = null; };
+    this._undoT = setTimeout(close, 7000);
+    t.querySelector('.toast-undo').onclick = e => { e.stopPropagation(); close(); try { fn(); } catch (err) {} };
   };
 
   /* ---------- pins (watch list) ---------- */
@@ -143,7 +184,7 @@
     if (!v) return;
     v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>Ranking ${this.s.sel.size} symptoms…</div></div>`;
     this.openResults();
-    const res = await H.W.rank([...this.s.sel], this.s.mode);
+    const res = await H.W.rank([...this.s.sel], this.s.mode, this.weightMap());
     this.s.last = res;
     const S = H.DB.symptoms;
     const strip = `<div class="case-strip">${[...this.s.sel].map(id => S[id] ? `<span class="trc-chip">${esc(S[id].name)}<button data-rm2="${id}" aria-label="Remove">✕</button></span>` : '').join('')}</div>`;
@@ -153,6 +194,17 @@
         <div class="emp"><div class="emp-i">${ic("info","i-lg")}</div><div>${H.I.t('noRes')}</div></div>`;
       this.bre();
       return;
+    }
+    const struckList = [...this.struck].filter(c => H.DB.remedies[c]);
+    if (struckList.length) {
+      const before = res.length;
+      for (let i = res.length - 1; i >= 0; i--) if (this.struck.has(res[i].code)) res.splice(i, 1);
+      if (!res.length) {
+        v.innerHTML = `<div class="rh"><div><div class="rt">Every remedy struck out</div><div class="rs">Nothing left to compare</div></div>
+          <div style="display:flex;gap:6px"><button class="btn bg" data-unstrike-all>Restore all</button><button class="btn bg" id="b-bk">← Symptoms</button></div></div>
+          <div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>Eliminative repertorisation removed all ${before} remedies.</div></div>`;
+        this.bre(); return;
+      }
     }
     const top = res[0].matchScore;
     const rankOf = c => { const i = res.findIndex(x => x.code === c); return i < 0 ? '—' : '#' + (i + 1); };
@@ -165,7 +217,7 @@
     }).join('')}</div>` : '';
     v.innerHTML = `<div class="rh">
         <div><div class="rt">${H.I.t('edu')}</div>
-          <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms · ${this.s.mode} mode</div></div>
+          <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} strong, ${dn} doubtful` : ''; })()} · ${this.s.mode} mode</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} Back</button>
           <button class="btn bg" id="b-sv">${ic("save","i-sm")} Save</button>
@@ -175,6 +227,7 @@
         </div></div>
       ${strip}
       ${pinStrip}
+      ${struckList.length ? `<div class="struckbar"><span>Struck out ${struckList.length}:</span>${struckList.map(c => `<button data-unstrike="${c}">${esc(H.DB.remedies[c].name)} ✕</button>`).join('')}</div>` : ''}
       <div class="disc"><strong>${H.I.t('ro')}</strong> ${H.I.t('rot')} Grade‑3 links are marked ★.</div>
       ${res.slice(0, 25).map((r, i) => {
         const rm = H.DB.remedies[r.code];
@@ -206,6 +259,7 @@
             <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} Graph</button>
             <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} Study</button>
             <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="Pin to watch while you change symptoms">${this.pins.has(r.code) ? 'Pinned' : 'Pin'}</button>
+            <button class="btn bg" data-strike="${r.code}" title="Strike this remedy out (eliminative method)">Strike</button>
             ${this.s.mode === 'teaching' ? `<button class="btn bg" data-ty="${r.code}">Why?</button>` : ''}
           </div></article>`;
       }).join('')}`;
@@ -247,6 +301,13 @@
     v.querySelectorAll('[data-ty]').forEach(b => b.addEventListener('click', e => this.showTy(e.currentTarget.dataset.ty)));
     v.querySelectorAll('[data-pin]').forEach(b => b.addEventListener('click', e => this.togglePin(e.currentTarget.dataset.pin)));
     v.querySelectorAll('[data-unpin]').forEach(b => b.addEventListener('click', e => this.togglePin(e.currentTarget.dataset.unpin)));
+    v.querySelectorAll('[data-strike]').forEach(b => b.addEventListener('click', e => {
+      const c = e.currentTarget.dataset.strike;
+      this.strike(c);
+      this.undo(`Struck out ${H.DB.remedies[c].name}`, () => this.strike(c));
+    }));
+    v.querySelectorAll('[data-unstrike]').forEach(b => b.addEventListener('click', e => this.strike(e.currentTarget.dataset.unstrike)));
+    v.querySelectorAll('[data-unstrike-all]').forEach(b => b.addEventListener('click', () => { this.struck.clear(); this.rr(); }));
   };
 
   U.exportSheet = function () {
@@ -383,8 +444,14 @@
       }
     });
     $('tray').addEventListener('click', e => {
+      const w = e.target.closest('[data-wt]');
+      if (w) { this.cycleWeight(parseInt(w.dataset.wt, 10)); return; }
       const r = e.target.closest('[data-rm]'); if (!r) return;
-      this.s.sel.delete(parseInt(r.dataset.rm, 10)); this.rs(); this.rt();
+      const id = parseInt(r.dataset.rm, 10);
+      const name = H.DB.symptoms[id] ? H.DB.symptoms[id].name : 'symptom';
+      this.s.sel.delete(id); this.rs(); this.rt();
+      if (this.s.view === 'results') this.rr();
+      this.undo(`Removed “${name}”`, () => { this.s.sel.add(id); this.rs(); this.rt(); if (this.s.view === 'results') this.rr(); });
     });
     on('b-find', () => { if (!this.s.sel.size) return this.toast('Select at least one symptom'); this.rr(); });
 
@@ -460,6 +527,46 @@
   /* ---------- keep rail/tab state in sync with results ---------- */
   const baseCm = U.cm;
   U.cm = function () { baseCm.call(this); };
+
+  /* ---------- persist weights with a saved case ---------- */
+  const baseCSave = H.C.save;
+  H.C.save = async function (n, m, s, nt) {
+    const c = await baseCSave.call(this, n, m, s, nt);
+    if (c) { c.weights = U.weightMap(); await H.IDB.put('cases', c); }
+    return c;
+  };
+
+  /* ---------- case timeline ---------- */
+  const baseClinicDetail = U.showClinicDetail;
+  if (baseClinicDetail) U.showClinicDetail = function (c) {
+    baseClinicDetail.call(this, c);
+    const mbd = document.querySelector('#md .mbd');
+    if (!mbd) return;
+    mbd.querySelectorAll('.fu').forEach(el => {
+      const when = el.querySelector('.fu-date');
+      if (!when) return;
+      const raw = when.textContent.trim();
+      const d = new Date(raw);
+      if (isNaN(d)) return;
+      const days = Math.round((Date.now() - d.getTime()) / 864e5);
+      const rel = days <= 0 ? 'today' : days === 1 ? 'yesterday' : days < 30 ? `${days} days ago` : `${Math.round(days / 30)} months ago`;
+      when.textContent = `${raw} · ${rel}`;
+    });
+  };
+
+  /* ---------- undo for deletions ---------- */
+  const baseClinicRm = H.Clinic.rm;
+  H.Clinic.rm = async function (id) {
+    const c = await H.Clinic.get(id);
+    await baseClinicRm.call(this, id);
+    if (c) U.undo(`Case “${c.name || 'untitled'}” deleted`, async () => { await H.IDB.put('clinic', c); H.U.showClinic(); });
+  };
+  const baseCRm = H.C.rm;
+  H.C.rm = async function (id) {
+    const c = await H.C.load(id);
+    await baseCRm.call(this, id);
+    if (c) U.undo('Saved repertorisation deleted', async () => { await H.IDB.put('cases', c); });
+  };
 
   window.addEventListener('resize', () => {
     if (!isMobile()) { const rv = $('rv'); if (rv) rv.classList.remove('open'); }

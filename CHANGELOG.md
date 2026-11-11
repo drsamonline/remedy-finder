@@ -1,5 +1,28 @@
 # Changelog
 
+## 13.2.0 — 2026-11-11
+
+Four more from the backlog, still zero dependencies.
+
+### Added
+- **Symptom weight.** Each selected symptom carries a weight: ordinary (·), strong (+)
+  or doubtful (−), cycled from the chip in the tray. Weights feed the score in both the
+  Web Worker and the main-thread fallback (verified identical), are shown in the results
+  header, and are saved with the case.
+- **Eliminative repertorisation.** Strike remedies out as the case narrows. A struck
+  strip above the results lists them and restores any of them; when everything is struck
+  the app says so instead of showing an empty list.
+- **Undo.** Removing a symptom, deleting a case or deleting a saved repertorisation now
+  offers an Undo in the toast for seven seconds.
+- **Full-text search.** The remedy index now includes each remedy's description and
+  quoted materia medica text, so a word from the source finds the remedy.
+- **Case timeline.** Follow-ups render as a timeline with relative dates ("12 days ago").
+
+### Fixed
+- Worker scoring diverged from the main thread after the weight change: the worker's
+  `W` parameter shadowed its chapter-weight table, so every category scored as 1.
+  Caught by comparing both scorers on the same input (46.1 → 38.0 with weights, in both).
+
 ## 13.1.0 — 2026-11-11
 
 Four enhancements from the backlog, no new dependencies.

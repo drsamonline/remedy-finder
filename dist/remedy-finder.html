@@ -514,7 +514,7 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v13.1</div>
+          <div class="bsub">Repertory workbench · v13.2</div>
         </div>
       </div>
       <label class="casebar">
@@ -730,8 +730,8 @@ return{symptoms:S,remedies:R,families,packs,cats,rubric:(D.RUB||{}),count:Object
 })();
 H.BK={root:null,lv(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,i)=>i),c=new Array(n+1);for(let i=1;i<=m;i++){c[0]=i;for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));[p,c]=[c,p];}return p[n];},ins(w,d){if(!this.root){this.root={w,d,c:{}};return;}let n=this.root;while(true){const dist=this.lv(w,n.w);if(dist===0){n.d=d;return;}if(!n.c[dist]){n.c[dist]={w,d,c:{}};return;}n=n.c[dist];}},sea(w,mx=2){const r=[];if(!this.root)return r;const s=[this.root];while(s.length){const n=s.pop();const d=this.lv(w,n.w);if(d<=mx)r.push({w:n.w,d:n.d,dist:d});for(let i=Math.max(1,d-mx);i<=d+mx;i++)if(n.c[i])s.push(n.c[i]);}return r;},build(){this.root=null;const S=H.DB.symptoms;for(const id in S){const s=S[id];const t=new Set();s.name.toLowerCase().split(/\s+/).forEach(x=>{if(x.length>1)t.add(x);});s.synonyms.forEach(sy=>sy.toLowerCase().split(/\s+/).forEach(x=>{if(x.length>1)t.add(x);}));t.forEach(x=>this.ins(x,s.id));}}};
 H.Idx={t:new Map(),build(){this.t.clear();const S=H.DB.symptoms;for(const id in S){const s=S[id];this.tk(s.name+' '+s.synonyms.join(' ')).forEach(x=>{if(!this.t.has(x))this.t.set(x,new Set());this.t.get(x).add(s.id);});}H.BK.build();},tk(s){return s.toLowerCase().replace(/[^a-z0-9\s-]/g,' ').split(/\s+/).filter(t=>t.length>1);},sea(q){const tk=this.tk(q);if(!tk.length)return[];const r=new Set();tk.forEach(x=>{if(this.t.has(x)){this.t.get(x).forEach(id=>r.add(id));return;}let f=false;for(const[t,ids]of this.t)if(t.includes(x)){ids.forEach(id=>r.add(id));f=true;}if(f)return;H.BK.sea(x,2).forEach(y=>{if(this.t.has(y.w))this.t.get(y.w).forEach(id=>r.add(id));});});return Array.from(r);}};
-H.Sc={w:{mental:5,general:4,modality:3,particular:2,keynote:5,clinical:1},f:new Map(),u:new Map(),bf(){this.f.clear();this.u.clear();const R=H.DB.remedies;for(const c in R){const r=R[c];[...r.mentals.map(id=>({id,cat:'mental'})),...r.generals.map(id=>({id,cat:'general'})),...(r.modalities.better||[]).map(id=>({id,cat:'modality'})),...(r.modalities.worse||[]).map(id=>({id,cat:'modality'})),...Object.values(r.particulars).flat().map(id=>({id,cat:'particular'})),...(r.keynotes||[]).map(id=>({id,cat:'keynote'}))].forEach(({id,cat})=>{if(!id)return;if(!this.f.has(id))this.f.set(id,{count:0});this.f.get(id).count++;if(!this.u.has(id))this.u.set(id,new Set());this.u.get(id).add(c);});}},sc(code,selIds,mode){const r=H.DB.remedies[code];if(!r)return null;const sel=new Set(selIds);const rs=new Map();r.mentals.forEach(id=>rs.set(id,'mental'));r.generals.forEach(id=>rs.set(id,'general'));(r.modalities.better||[]).forEach(id=>rs.set(id,'modality'));(r.modalities.worse||[]).forEach(id=>rs.set(id,'modality'));Object.values(r.particulars).flat().forEach(id=>rs.set(id,'particular'));(r.keynotes||[]).forEach(id=>rs.set(id,'keynote'));let ms=0,mc=0,uc=0,mi=[],ui=[];const tot=Object.keys(H.DB.remedies).length;sel.forEach(sid=>{if(rs.has(sid)){const cat=rs.get(sid);const base=this.w[cat]||1;const f=this.f.get(sid);const rb=f?(1+Math.log2(Math.max(1,tot/f.count))):1;const kb=(r.keynotes&&r.keynotes.includes(sid))?1.5:1;const gb=(r.strong&&r.strong.includes(sid))?1.25:((r.weak&&r.weak.includes(sid))?0.85:1);ms+=base*rb*kb*gb;mc++;mi.push(sid);const u=this.u.get(sid);if(u&&u.size===1){uc++;ui.push(sid);}}});let mb=1;if(mode==='acute'&&r.acute)mb=1.15;if(mode==='constitutional'&&r.constitutional)mb=1.15;ms*=mb;const ds=selIds.length?(uc/selIds.length)*100:0;const conf=Math.min(100,(ms/(selIds.length*10))*100);return{code,matchScore:Math.round(ms*10)/10,diffScore:Math.round(ds),confidence:Math.round(conf),matchCount:mc,uniqueCount:uc,matchedIds:mi,uniqueIds:ui};},rank(selIds,mode){if(!selIds.length)return[];const r=[];for(const c in H.DB.remedies){const s=this.sc(c,selIds,mode);if(s&&s.matchCount>0)r.push(s);}r.sort((a,b)=>b.matchScore-a.matchScore||b.diffScore-a.diffScore);return r;}};
-H.W={w:null,ready:false,p:null,init(){if(typeof Worker==='undefined')return;const code=`'use strict';let R=null,F=null,U=null;const W={mental:5,general:4,modality:3,particular:2,keynote:5,clinical:1};self.onmessage=function(e){const m=e.data;if(m.type==='init'){R=m.remedies;F=m.freq;U=m.unique;self.postMessage({type:'ready'});}else if(m.type==='rank'){const res=[];for(const c in R){const s=score(c,m.selIds,m.mode);if(s&&s.matchCount>0)res.push(s);}res.sort((a,b)=>b.matchScore-a.matchScore||b.diffScore-a.diffScore);self.postMessage({type:'results',id:m.id,results:res});}};function score(code,selIds,mode){const r=R[code];if(!r)return null;const sel=new Set(selIds);const rs=new Map();r.mentals.forEach(id=>rs.set(id,'mental'));r.generals.forEach(id=>rs.set(id,'general'));(r.modalities.better||[]).forEach(id=>rs.set(id,'modality'));(r.modalities.worse||[]).forEach(id=>rs.set(id,'modality'));Object.values(r.particulars).flat().forEach(id=>rs.set(id,'particular'));(r.keynotes||[]).forEach(id=>rs.set(id,'keynote'));let ms=0,mc=0,uc=0,mi=[],ui=[];const tot=Object.keys(R).length;sel.forEach(sid=>{if(rs.has(sid)){const cat=rs.get(sid);const base=W[cat]||1;const f=F[sid];const rb=f?(1+Math.log2(Math.max(1,tot/f.count))):1;const kb=(r.keynotes&&r.keynotes.includes(sid))?1.5:1;const gb=(r.strong&&r.strong.includes(sid))?1.25:((r.weak&&r.weak.includes(sid))?0.85:1);ms+=base*rb*kb*gb;mc++;mi.push(sid);const u=U[sid];if(u&&u.length===1){uc++;ui.push(sid);}}});let mb=1;if(mode==='acute'&&r.acute)mb=1.15;if(mode==='constitutional'&&r.constitutional)mb=1.15;ms*=mb;const ds=selIds.length?(uc/selIds.length)*100:0;const conf=Math.min(100,(ms/(selIds.length*10))*100);return{code,matchScore:Math.round(ms*10)/10,diffScore:Math.round(ds),confidence:Math.round(conf),matchCount:mc,uniqueCount:uc,matchedIds:mi,uniqueIds:ui};}`;try{const b=new Blob([code],{type:'application/javascript'});this.w=new Worker(URL.createObjectURL(b));this.w.onmessage=e=>{if(e.data.type==='ready')this.ready=true;else if(e.data.type==='results'&&this.p&&this.p.id===e.data.id){this.p.resolve(e.data.results);this.p=null;}};this.w.onerror=()=>{this.w=null;};this.sync();}catch(e){}},sync(){if(!this.w)return;const f={},u={};H.Sc.f.forEach((v,k)=>f[k]={count:v.count});H.Sc.u.forEach((v,k)=>u[k]=Array.from(v));this.w.postMessage({type:'init',remedies:H.DB.remedies,freq:f,unique:u});},rank(selIds,mode){return new Promise(r=>{if(!this.w||!this.ready){r(H.Sc.rank(selIds,mode));return;}const id=Date.now()+Math.random();this.p={id,resolve:r};this.w.postMessage({type:'rank',id,selIds,mode});setTimeout(()=>{if(this.p&&this.p.id===id){this.p=null;r(H.Sc.rank(selIds,mode));}},2000);});}};
+H.Sc={w:{mental:5,general:4,modality:3,particular:2,keynote:5,clinical:1},f:new Map(),u:new Map(),bf(){this.f.clear();this.u.clear();const R=H.DB.remedies;for(const c in R){const r=R[c];[...r.mentals.map(id=>({id,cat:'mental'})),...r.generals.map(id=>({id,cat:'general'})),...(r.modalities.better||[]).map(id=>({id,cat:'modality'})),...(r.modalities.worse||[]).map(id=>({id,cat:'modality'})),...Object.values(r.particulars).flat().map(id=>({id,cat:'particular'})),...(r.keynotes||[]).map(id=>({id,cat:'keynote'}))].forEach(({id,cat})=>{if(!id)return;if(!this.f.has(id))this.f.set(id,{count:0});this.f.get(id).count++;if(!this.u.has(id))this.u.set(id,new Set());this.u.get(id).add(c);});}},sc(code,selIds,mode,W){W=W||{};const r=H.DB.remedies[code];if(!r)return null;const sel=new Set(selIds);const rs=new Map();r.mentals.forEach(id=>rs.set(id,'mental'));r.generals.forEach(id=>rs.set(id,'general'));(r.modalities.better||[]).forEach(id=>rs.set(id,'modality'));(r.modalities.worse||[]).forEach(id=>rs.set(id,'modality'));Object.values(r.particulars).flat().forEach(id=>rs.set(id,'particular'));(r.keynotes||[]).forEach(id=>rs.set(id,'keynote'));let ms=0,mc=0,uc=0,mi=[],ui=[];const tot=Object.keys(H.DB.remedies).length;sel.forEach(sid=>{if(rs.has(sid)){const cat=rs.get(sid);const base=this.w[cat]||1;const f=this.f.get(sid);const rb=f?(1+Math.log2(Math.max(1,tot/f.count))):1;const kb=(r.keynotes&&r.keynotes.includes(sid))?1.5:1;const gb=(r.strong&&r.strong.includes(sid))?1.25:((r.weak&&r.weak.includes(sid))?0.85:1);ms+=base*rb*kb*gb*(W[sid]||1);mc++;mi.push(sid);const u=this.u.get(sid);if(u&&u.size===1){uc++;ui.push(sid);}}});let mb=1;if(mode==='acute'&&r.acute)mb=1.15;if(mode==='constitutional'&&r.constitutional)mb=1.15;ms*=mb;const ds=selIds.length?(uc/selIds.length)*100:0;const conf=Math.min(100,(ms/(selIds.length*10))*100);return{code,matchScore:Math.round(ms*10)/10,diffScore:Math.round(ds),confidence:Math.round(conf),matchCount:mc,uniqueCount:uc,matchedIds:mi,uniqueIds:ui};},rank(selIds,mode,W){if(!selIds.length)return[];const r=[];for(const c in H.DB.remedies){const s=this.sc(c,selIds,mode,W);if(s&&s.matchCount>0)r.push(s);}r.sort((a,b)=>b.matchScore-a.matchScore||b.diffScore-a.diffScore);return r;}};
+H.W={w:null,ready:false,p:null,init(){if(typeof Worker==='undefined')return;const code=`'use strict';let R=null,F=null,U=null;const W={mental:5,general:4,modality:3,particular:2,keynote:5,clinical:1};self.onmessage=function(e){const m=e.data;if(m.type==='init'){R=m.remedies;F=m.freq;U=m.unique;self.postMessage({type:'ready'});}else if(m.type==='rank'){const res=[];for(const c in R){const s=score(c,m.selIds,m.mode,m.W);if(s&&s.matchCount>0)res.push(s);}res.sort((a,b)=>b.matchScore-a.matchScore||b.diffScore-a.diffScore);self.postMessage({type:'results',id:m.id,results:res});}};function score(code,selIds,mode,SW){SW=SW||{};const r=R[code];if(!r)return null;const sel=new Set(selIds);const rs=new Map();r.mentals.forEach(id=>rs.set(id,'mental'));r.generals.forEach(id=>rs.set(id,'general'));(r.modalities.better||[]).forEach(id=>rs.set(id,'modality'));(r.modalities.worse||[]).forEach(id=>rs.set(id,'modality'));Object.values(r.particulars).flat().forEach(id=>rs.set(id,'particular'));(r.keynotes||[]).forEach(id=>rs.set(id,'keynote'));let ms=0,mc=0,uc=0,mi=[],ui=[];const tot=Object.keys(R).length;sel.forEach(sid=>{if(rs.has(sid)){const cat=rs.get(sid);const base=W[cat]||1;const f=F[sid];const rb=f?(1+Math.log2(Math.max(1,tot/f.count))):1;const kb=(r.keynotes&&r.keynotes.includes(sid))?1.5:1;const gb=(r.strong&&r.strong.includes(sid))?1.25:((r.weak&&r.weak.includes(sid))?0.85:1);ms+=base*rb*kb*gb*(SW[sid]||1);mc++;mi.push(sid);const u=U[sid];if(u&&u.length===1){uc++;ui.push(sid);}}});let mb=1;if(mode==='acute'&&r.acute)mb=1.15;if(mode==='constitutional'&&r.constitutional)mb=1.15;ms*=mb;const ds=selIds.length?(uc/selIds.length)*100:0;const conf=Math.min(100,(ms/(selIds.length*10))*100);return{code,matchScore:Math.round(ms*10)/10,diffScore:Math.round(ds),confidence:Math.round(conf),matchCount:mc,uniqueCount:uc,matchedIds:mi,uniqueIds:ui};}`;try{const b=new Blob([code],{type:'application/javascript'});this.w=new Worker(URL.createObjectURL(b));this.w.onmessage=e=>{if(e.data.type==='ready')this.ready=true;else if(e.data.type==='results'&&this.p&&this.p.id===e.data.id){this.p.resolve(e.data.results);this.p=null;}};this.w.onerror=()=>{this.w=null;};this.sync();}catch(e){}},sync(){if(!this.w)return;const f={},u={};H.Sc.f.forEach((v,k)=>f[k]={count:v.count});H.Sc.u.forEach((v,k)=>u[k]=Array.from(v));this.w.postMessage({type:'init',remedies:H.DB.remedies,freq:f,unique:u});},rank(selIds,mode,W){W=W||{};return new Promise(r=>{if(!this.w||!this.ready){r(H.Sc.rank(selIds,mode,W));return;}const id=Date.now()+Math.random();this.p={id,resolve:r};this.w.postMessage({type:'rank',id,selIds,mode,W});setTimeout(()=>{if(this.p&&this.p.id===id){this.p=null;r(H.Sc.rank(selIds,mode,W));}},2000);});}};
 H.SRS={K:'srs.cards',SK:'srs.streak',all(){return H.St.g(this.K,[]);},save(c){H.St.s(this.K,c);},streak(){return H.St.g(this.SK,{current:0,best:0,lastDate:null});},saveStreak(s){H.St.s(this.SK,s);},updateStreak(){const s=this.streak();const today=new Date().toDateString();if(s.lastDate===today)return s;const yesterday=new Date(Date.now()-864e5).toDateString();if(s.lastDate===yesterday)s.current++;else s.current=1;if(s.current>s.best)s.best=s.current;s.lastDate=today;this.saveStreak(s);return s;},add(code){const cards=this.all();const r=H.DB.remedies[code];if(!r)return;const S=H.DB.symptoms;['keynote','modality','mental','clinical'].forEach(type=>{const id=`${code}_${type}`;if(cards.find(c=>c.id===id))return;let q='',a='';if(type==='keynote'){const k=(r.keynotes||[]).map(id=>S[id]?.name).filter(Boolean).slice(0,3);q=`Name 3 keynotes of ${r.name}`;a=k.join(', ')||'—';}else if(type==='modality'){const b=(r.modalities.better||[]).map(id=>S[id]?.name).filter(Boolean).slice(0,2);const w=(r.modalities.worse||[]).map(id=>S[id]?.name).filter(Boolean).slice(0,2);q=`Modalities of ${r.name}?`;a=`Better: ${b.join(', ')||'—'} | Worse: ${w.join(', ')||'—'}`;}else if(type==='mental'){const m=(r.mentals||[]).map(id=>S[id]?.name).filter(Boolean).slice(0,3);q=`Mental picture of ${r.name}?`;a=m.join(', ')||'—';}else{q=`Clinical uses of ${r.name}?`;a=(r.clinicals||[]).join(', ')||'—';}cards.push({id,code,type,q,a,ease:2.5,interval:1,reps:0,nextReview:Date.now()});});this.save(cards);},due(filter={}){let cards=this.all().filter(c=>c.nextReview<=Date.now());if(filter.family){cards=cards.filter(c=>{const r=H.DB.remedies[c.code];return r?.family===filter.family;});}if(filter.type){cards=cards.filter(c=>c.type===filter.type);}if(filter.code){cards=cards.filter(c=>c.code===filter.code);}return cards.sort((a,b)=>a.nextReview-b.nextReview);},review(cardId,quality){const cards=this.all();const card=cards.find(c=>c.id===cardId);if(!card)return;if(quality===0){card.interval=1;card.reps=0;}else{if(card.reps===0)card.interval=1;else if(card.reps===1)card.interval=6;else card.interval=Math.round(card.interval*card.ease);card.reps++;}card.ease=Math.max(1.3,card.ease+(0.1-(3-quality)*(0.08+(3-quality)*0.02)));card.nextReview=Date.now()+card.interval*864e5;this.save(cards);this.updateStreak();},families(){const fams=new Set();this.all().forEach(c=>{const r=H.DB.remedies[c.code];if(r?.family)fams.add(r.family);});return Array.from(fams).sort();},byDate(days=30){const cards=this.all();const byDay={};const now=Date.now();for(let i=0;i<days;i++){const d=new Date(now+i*864e5).toDateString();byDay[d]=[];}cards.forEach(c=>{const d=new Date(c.nextReview).toDateString();if(byDay[d])byDay[d].push(c);});return byDay;}};
 H.CaseData=[{t:'The Sudden Fever',n:'A 7-year-old child was playing outside in cold wind. Suddenly developed high fever with intense restlessness. The child is terrified, says they feel they will die. Thirsty for cold water. Symptoms worse after midnight.',a:'Acon'},{t:'The Irritable Colic',n:'An infant screams in pain, inconsolable except when carried by mother. One cheek is hot, the other cold. Pain is unbearable, child is cross and snappy. Worse at night.',a:'Cham'},{t:'The Grief Case',n:'A 35-year-old woman recently lost her mother. She weeps alone, does not want to talk about it, becomes worse when consoled. Craves salt. Band-like headache worse from sun. Reserved and closed.',a:'Nat-m'},{t:'The Modern Professional',n:'A 42-year-old executive works 60 hours a week, drinks coffee constantly, eats rich food. Chilliness, irritable, constipated with ineffectual urging. Worse morning, cold, mental exertion. Better warmth, rest.',a:'Nux-v'},{t:'The Weeping Mother',n:'A 28-year-old new mother is mild, yielding, weepy. Desires consolation. Thirstless. Thick yellow-green nasal discharge. Changeable symptoms. Worse warm room, evening. Better open air.',a:'Puls'},{t:'The Rheumatic Patient',n:'A 55-year-old gardener presents with stiff, rusty joints. Worse first motion, better continued motion. Restless, must change position. Worse cold, damp, rest. Better warmth.',a:'Rhus-t'},{t:'The Exhausted Traveler',n:'A 38-year-old returns from a tropical trip with profound exhaustion, intense restlessness, fear of death. Chilliness, thirst for small sips often. Worse midnight, cold. Better warmth, company.',a:'Ars'},{t:'The Bruised Athlete',n:'A 25-year-old rugby player after a hard match. Sore, bruised feeling as if beaten. Says "I am fine" when clearly injured. Bed feels too hard. Worse touch, jar.',a:'Arn'},{t:'The Teething Baby',n:'A 10-month-old baby screams during teething. Cross, irritable, wants to be carried constantly. One cheek red and hot, other pale. Gums swollen. Worse at night, better carried.',a:'Cham'},{t:'The Elderly Insomniac',n:'A 72-year-old man cannot sleep. Wakes at 3 am, cannot fall back asleep. Chilliness, craves warm drinks. Constipation. Worse cold, damp. Better warmth, rest.',a:'Nux-v'},{t:'The Pregnant Woman',n:'A 30-year-old woman, 16 weeks pregnant, has severe morning sickness. Nausea from smell of food. Vomiting. Thirstless. Worse morning, motion. Better open air, rest.',a:'Sep'},{t:'The Anxious Student',n:'A 19-year-old student before exams. Anticipatory anxiety, diarrhea before presentations. Impulsive, craves sweets. Worse heat, crowds. Better cold, open air.',a:'Arg-n'},{t:'The Chronic Eczema',n:'A 45-year-old man with chronic eczema for 5 years. Itching worse heat, bathing. Skin dry, cracked. Hot, red orifices. Early morning diarrhea. Worse standing, heat.',a:'Sulph'},{t:'The Menopausal Woman',n:'A 52-year-old woman with hot flashes, night sweats. Indifferent to family, irritable. Bearing-down sensation. Craves vinegar. Worse cold, damp. Better vigorous motion.',a:'Sep'},{t:'The Asthmatic Child',n:'A 6-year-old with asthma worse at night, after midnight. Cough dry, barking. Suffocative. Better eating, warmth. Worse cold, lying down.',a:'Spong'},{t:'The Migraine Patient',n:'A 38-year-old woman with right-sided migraine starting at occiput, settling over right eye. Vomiting relieves. Worse sun, motion. Better sleep, pressure.',a:'Sang'},{t:'The Gout Patient',n:'A 60-year-old man with acute gout in big toe. Joint red, swollen, excruciating. Worse touch, motion. Better cold applications. Thirsty.',a:'Led'},{t:'The Hemorrhoid Patient',n:'A 48-year-old man with painful hemorrhoids. Burning, worse after stool. Constipation with hard stool. Worse standing, walking. Better cold, rest.',a:'Aesc'},{t:'The Post-Surgical Patient',n:'A 55-year-old woman after abdominal surgery. Wound slow to heal. Suppressed anger about the situation. Urinary retention. Worse touch. Better rest.',a:'Staph'},{t:'The Allergic Rhinitis',n:'A 25-year-old with seasonal allergic rhinitis. Acrid nasal discharge, bland tears. Frequent sneezing. Worse indoors, evening. Better open air, cold.',a:'All-c'},{t:'The Panic Attack',n:'A 33-year-old woman with sudden panic attacks. Palpitations, flushing, fear of death. Sudden onset. Better cold air. Worse heat, crowds.',a:'Amyl-nit'},{t:'The Chronic Fatigue',n:'A 40-year-old man with chronic fatigue for 6 months. Prostration, weakness. Chilliness, craves salt. Worse cold, damp. Better warmth, rest.',a:'Calc'},{t:'The Childhood Worms',n:'A 5-year-old child with intestinal worms. Irritable, picks nose. Craves sweets. Colic around navel. Worse at night. Grinds teeth in sleep.',a:'Cina'},{t:'The Burn Patient',n:'A 28-year-old with second-degree burn on forearm. Intense burning pain. Thirsty. Worse touch. Better cold applications. Restless.',a:'Canth'}];
 H.PotData=[{case:'A child with sudden high fever, intense fear of death, restlessness, thirst for cold water. Onset 2 hours ago after exposure to cold wind.',ans:'30C',why:'Clear acute picture with strong mentals. 30C balances physical + mental.',opts:['6X','30C','200C','1M']},{case:'A 45-year-old woman with chronic grief for 2 years after losing her mother. Weeps alone, worse consolation, craves salt, reserved. No acute symptoms.',ans:'1M',why:'Deep constitutional case with long duration. Clear mental picture. Single dose 1M.',opts:['6X','30C','200C','1M']},{case:'A patient with recurrent headaches, worse sun, band-like, craves salt, reserved. Previous 30C Nat-m helped briefly but relapsed after 2 weeks.',ans:'200C',why:'Constitutional remedy confirmed but 30C insufficient depth. 200C single dose.',opts:['6X','30C','200C','1M']},{case:'A gardener with local knee pain after a sprain, worse first motion, better continued motion. No mental symptoms. Acute injury.',ans:'6X',why:'Purely physical, local symptom. Low potency for tissue-level action.',opts:['6X','30C','200C','1M']},{case:'A 3-year-old with acute ear infection. High fever, ear pain, irritable. First episode. No chronic history.',ans:'30C',why:'First acute episode in a child. 30C is standard for acute prescribing.',opts:['6X','30C','200C','1M']},{case:'A 68-year-old with chronic arthritis for 10 years. Worse cold, damp. Better warmth. Previous remedies gave partial relief.',ans:'200C',why:'Chronic case requiring deeper action. 200C for constitutional depth.',opts:['6X','30C','200C','1M']},{case:'A pregnant woman (20 weeks) with acute nausea. No chronic symptoms. First pregnancy.',ans:'30C',why:'Acute symptom in pregnancy. 30C is safe and effective.',opts:['6X','30C','200C','1M']},{case:'A 55-year-old with acute low back pain after lifting. Worse motion, better rest. No mental symptoms.',ans:'30C',why:'Acute physical complaint. 30C standard. Can repeat 2-3x daily.',opts:['6X','30C','200C','1M']},{case:'A patient with chronic anxiety for 5 years. Fear of death, restlessness. Previous 200C Ars helped but relapsed after 1 month.',ans:'1M',why:'Relapse after 200C suggests deeper potency needed. 1M for constitutional depth.',opts:['6X','30C','200C','1M']},{case:'A 7-year-old with recurrent tonsillitis every 3 months for 2 years. Chilliness, craves eggs. Sweats on head.',ans:'200C',why:'Recurrent acute suggesting constitutional predisposition. 200C for constitutional correction.',opts:['6X','30C','200C','1M']},{case:'A 40-year-old with acute food poisoning. Vomiting, diarrhea, restlessness. Onset 3 hours ago.',ans:'30C',why:'Acute self-limiting condition. 30C standard. Repeat every 30 min.',opts:['6X','30C','200C','1M']},{case:'A 62-year-old with chronic insomnia for 8 years. Wakes at 3 am. Chilliness, constipation. Previous remedies failed.',ans:'1M',why:'Long-standing chronic with failed lower potencies. 1M for deep constitutional action.',opts:['6X','30C','200C','1M']},{case:'A 28-year-old with acute migraine. Right-sided, vomiting relieves. First episode this month.',ans:'30C',why:'Acute migraine episode. 30C standard. Repeat at onset of next episode.',opts:['6X','30C','200C','1M']},{case:'A 50-year-old with chronic depression for 3 years. Suicidal thoughts, loss of interest. Previous 200C Aur helped.',ans:'1M',why:'Chronic depression with suicidal ideation. 1M for deep constitutional. Supervise closely.',opts:['6X','30C','200C','1M']},{case:'A 4-year-old with acute croup. Barking cough, worse at night. First episode.',ans:'30C',why:'Acute croup in child. 30C standard. Repeat every 15-30 min during acute phase.',opts:['6X','30C','200C','1M']},{case:'A 35-year-old with chronic eczema for 4 years. Itching worse heat, bathing. Previous 30C Sulph helped temporarily.',ans:'200C',why:'Chronic skin condition with partial response to 30C. 200C for deeper action.',opts:['6X','30C','200C','1M']},{case:'A 70-year-old with acute urinary retention post-surgery. Cannot urinate. No chronic history.',ans:'30C',why:'Acute post-surgical retention. 30C standard. Repeat every 2 hours.',opts:['6X','30C','200C','1M']},{case:'A 22-year-old with chronic acne for 3 years. Face, chest. Worse before menses. Previous 30C Puls helped.',ans:'200C',why:'Chronic acne with menstrual aggravation. 200C for constitutional correction.',opts:['6X','30C','200C','1M']},{case:'A 48-year-old with acute gout in big toe. Red, swollen, excruciating. First episode.',ans:'30C',why:'Acute gout. 30C standard. Repeat every 4 hours. Consider Ledum if better cold.',opts:['6X','30C','200C','1M']},{case:'A 58-year-old with chronic hypertension for 10 years. Headaches, palpitations. Previous 200C Aur helped.',ans:'1M',why:'Chronic hypertension with partial response. 1M for deep constitutional. Monitor BP.',opts:['6X','30C','200C','1M']},{case:'A 15-year-old with acute exam anxiety. Panic, diarrhea before tests. First time this severe.',ans:'30C',why:'Acute situational anxiety. 30C standard. Take 30 min before exam.',opts:['6X','30C','200C','1M']},{case:'A 42-year-old with chronic IBS for 5 years. Bloating, alternating diarrhea/constipation. Previous remedies inconsistent.',ans:'200C',why:'Chronic IBS requiring constitutional approach. 200C for deeper action.',opts:['6X','30C','200C','1M']},{case:'A 30-year-old with acute bee sting reaction. Local swelling, burning. No systemic reaction.',ans:'30C',why:'Acute local reaction. 30C Apis standard. Repeat every 30 min if needed.',opts:['6X','30C','200C','1M']},{case:"A 65-year-old with chronic Parkinson's tremor. Progressive over 5 years. Previous 200C Caustic helped.",ans:'1M',why:'Progressive neurological condition. 1M for deep constitutional. Palliative approach.',opts:['6X','30C','200C','1M']}];
@@ -821,7 +821,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (_remIdx) return _remIdx;
     _remIdx = Object.entries(H.DB.remedies).map(([code, r]) => ({
       code, r,
-      hay: (r.name + ' ' + r.latin + ' ' + (r.clinicals || []).join(' ') + ' ' + (r.family || '')).toLowerCase()
+      hay: (r.name + ' ' + r.latin + ' ' + (r.clinicals || []).join(' ') + ' ' + (r.family || ' ') + ' ' + (r.description || '') + ' ' + (r.quote || '')).toLowerCase()
     }));
     return _remIdx;
   };
@@ -915,8 +915,49 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     $('trc').textContent = `${this.s.sel.size} symptom${this.s.sel.size > 1 ? 's' : ''}`;
     $('trch').innerHTML = [...this.s.sel].map(id => {
       const s = S[id];
-      return s ? `<span class="trc-chip">${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>` : '';
+      if (!s) return '';
+      const m = this.wMult(id);
+      const glyph = m === 1.5 ? '+' : (m === 0.5 ? '−' : '·');
+      const label = m === 1.5 ? 'strong' : (m === 0.5 ? 'doubtful' : 'ordinary');
+      return `<span class="trc-chip w${m === 1.5 ? ' up' : (m === 0.5 ? ' down' : '')}">
+        <button class="wt" data-wt="${id}" title="Weight: ${label} — click to change" aria-label="Weight ${label}">${glyph}</button>
+        ${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>`;
     }).join('');
+  };
+
+  /* ---------- symptom weight ---------- */
+  U.weights = {};
+  U.wMult = function (sid) { return this.weights[sid] || 1; };
+  U.cycleWeight = function (sid) {
+    const cur = this.wMult(sid);
+    const next = cur === 1 ? 1.5 : (cur === 1.5 ? 0.5 : 1);
+    if (next === 1) delete this.weights[sid]; else this.weights[sid] = next;
+    this.rt();
+    if (this.s.view === 'results') this.rr();
+  };
+  U.weightMap = function () {
+    const w = {};
+    Object.keys(this.weights).forEach(k => { if (this.s.sel.has(+k)) w[k] = this.weights[k]; });
+    return w;
+  };
+
+  /* ---------- eliminative: struck remedies ---------- */
+  U.struck = new Set();
+  U.strike = function (code) {
+    if (this.struck.has(code)) this.struck.delete(code); else this.struck.add(code);
+    if (this.s.last) this.rr();
+  };
+
+  /* ---------- undo toast ---------- */
+  U.undo = function (msg, fn) {
+    const t = $('toast');
+    if (!t) return;
+    t.innerHTML = `${esc(msg)} <button class="toast-undo" type="button">Undo</button>`;
+    t.classList.add('on');
+    clearTimeout(this._undoT);
+    const close = () => { t.classList.remove('on'); t.innerHTML = ''; t.onclick = null; };
+    this._undoT = setTimeout(close, 7000);
+    t.querySelector('.toast-undo').onclick = e => { e.stopPropagation(); close(); try { fn(); } catch (err) {} };
   };
 
   /* ---------- pins (watch list) ---------- */
@@ -933,7 +974,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (!v) return;
     v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>Ranking ${this.s.sel.size} symptoms…</div></div>`;
     this.openResults();
-    const res = await H.W.rank([...this.s.sel], this.s.mode);
+    const res = await H.W.rank([...this.s.sel], this.s.mode, this.weightMap());
     this.s.last = res;
     const S = H.DB.symptoms;
     const strip = `<div class="case-strip">${[...this.s.sel].map(id => S[id] ? `<span class="trc-chip">${esc(S[id].name)}<button data-rm2="${id}" aria-label="Remove">✕</button></span>` : '').join('')}</div>`;
@@ -943,6 +984,17 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         <div class="emp"><div class="emp-i">${ic("info","i-lg")}</div><div>${H.I.t('noRes')}</div></div>`;
       this.bre();
       return;
+    }
+    const struckList = [...this.struck].filter(c => H.DB.remedies[c]);
+    if (struckList.length) {
+      const before = res.length;
+      for (let i = res.length - 1; i >= 0; i--) if (this.struck.has(res[i].code)) res.splice(i, 1);
+      if (!res.length) {
+        v.innerHTML = `<div class="rh"><div><div class="rt">Every remedy struck out</div><div class="rs">Nothing left to compare</div></div>
+          <div style="display:flex;gap:6px"><button class="btn bg" data-unstrike-all>Restore all</button><button class="btn bg" id="b-bk">← Symptoms</button></div></div>
+          <div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>Eliminative repertorisation removed all ${before} remedies.</div></div>`;
+        this.bre(); return;
+      }
     }
     const top = res[0].matchScore;
     const rankOf = c => { const i = res.findIndex(x => x.code === c); return i < 0 ? '—' : '#' + (i + 1); };
@@ -955,7 +1007,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     }).join('')}</div>` : '';
     v.innerHTML = `<div class="rh">
         <div><div class="rt">${H.I.t('edu')}</div>
-          <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms · ${this.s.mode} mode</div></div>
+          <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} strong, ${dn} doubtful` : ''; })()} · ${this.s.mode} mode</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} Back</button>
           <button class="btn bg" id="b-sv">${ic("save","i-sm")} Save</button>
@@ -965,6 +1017,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         </div></div>
       ${strip}
       ${pinStrip}
+      ${struckList.length ? `<div class="struckbar"><span>Struck out ${struckList.length}:</span>${struckList.map(c => `<button data-unstrike="${c}">${esc(H.DB.remedies[c].name)} ✕</button>`).join('')}</div>` : ''}
       <div class="disc"><strong>${H.I.t('ro')}</strong> ${H.I.t('rot')} Grade‑3 links are marked ★.</div>
       ${res.slice(0, 25).map((r, i) => {
         const rm = H.DB.remedies[r.code];
@@ -996,6 +1049,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
             <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} Graph</button>
             <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} Study</button>
             <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="Pin to watch while you change symptoms">${this.pins.has(r.code) ? 'Pinned' : 'Pin'}</button>
+            <button class="btn bg" data-strike="${r.code}" title="Strike this remedy out (eliminative method)">Strike</button>
             ${this.s.mode === 'teaching' ? `<button class="btn bg" data-ty="${r.code}">Why?</button>` : ''}
           </div></article>`;
       }).join('')}`;
@@ -1037,6 +1091,13 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     v.querySelectorAll('[data-ty]').forEach(b => b.addEventListener('click', e => this.showTy(e.currentTarget.dataset.ty)));
     v.querySelectorAll('[data-pin]').forEach(b => b.addEventListener('click', e => this.togglePin(e.currentTarget.dataset.pin)));
     v.querySelectorAll('[data-unpin]').forEach(b => b.addEventListener('click', e => this.togglePin(e.currentTarget.dataset.unpin)));
+    v.querySelectorAll('[data-strike]').forEach(b => b.addEventListener('click', e => {
+      const c = e.currentTarget.dataset.strike;
+      this.strike(c);
+      this.undo(`Struck out ${H.DB.remedies[c].name}`, () => this.strike(c));
+    }));
+    v.querySelectorAll('[data-unstrike]').forEach(b => b.addEventListener('click', e => this.strike(e.currentTarget.dataset.unstrike)));
+    v.querySelectorAll('[data-unstrike-all]').forEach(b => b.addEventListener('click', () => { this.struck.clear(); this.rr(); }));
   };
 
   U.exportSheet = function () {
@@ -1173,8 +1234,14 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       }
     });
     $('tray').addEventListener('click', e => {
+      const w = e.target.closest('[data-wt]');
+      if (w) { this.cycleWeight(parseInt(w.dataset.wt, 10)); return; }
       const r = e.target.closest('[data-rm]'); if (!r) return;
-      this.s.sel.delete(parseInt(r.dataset.rm, 10)); this.rs(); this.rt();
+      const id = parseInt(r.dataset.rm, 10);
+      const name = H.DB.symptoms[id] ? H.DB.symptoms[id].name : 'symptom';
+      this.s.sel.delete(id); this.rs(); this.rt();
+      if (this.s.view === 'results') this.rr();
+      this.undo(`Removed “${name}”`, () => { this.s.sel.add(id); this.rs(); this.rt(); if (this.s.view === 'results') this.rr(); });
     });
     on('b-find', () => { if (!this.s.sel.size) return this.toast('Select at least one symptom'); this.rr(); });
 
@@ -1250,6 +1317,46 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   /* ---------- keep rail/tab state in sync with results ---------- */
   const baseCm = U.cm;
   U.cm = function () { baseCm.call(this); };
+
+  /* ---------- persist weights with a saved case ---------- */
+  const baseCSave = H.C.save;
+  H.C.save = async function (n, m, s, nt) {
+    const c = await baseCSave.call(this, n, m, s, nt);
+    if (c) { c.weights = U.weightMap(); await H.IDB.put('cases', c); }
+    return c;
+  };
+
+  /* ---------- case timeline ---------- */
+  const baseClinicDetail = U.showClinicDetail;
+  if (baseClinicDetail) U.showClinicDetail = function (c) {
+    baseClinicDetail.call(this, c);
+    const mbd = document.querySelector('#md .mbd');
+    if (!mbd) return;
+    mbd.querySelectorAll('.fu').forEach(el => {
+      const when = el.querySelector('.fu-date');
+      if (!when) return;
+      const raw = when.textContent.trim();
+      const d = new Date(raw);
+      if (isNaN(d)) return;
+      const days = Math.round((Date.now() - d.getTime()) / 864e5);
+      const rel = days <= 0 ? 'today' : days === 1 ? 'yesterday' : days < 30 ? `${days} days ago` : `${Math.round(days / 30)} months ago`;
+      when.textContent = `${raw} · ${rel}`;
+    });
+  };
+
+  /* ---------- undo for deletions ---------- */
+  const baseClinicRm = H.Clinic.rm;
+  H.Clinic.rm = async function (id) {
+    const c = await H.Clinic.get(id);
+    await baseClinicRm.call(this, id);
+    if (c) U.undo(`Case “${c.name || 'untitled'}” deleted`, async () => { await H.IDB.put('clinic', c); H.U.showClinic(); });
+  };
+  const baseCRm = H.C.rm;
+  H.C.rm = async function (id) {
+    const c = await H.C.load(id);
+    await baseCRm.call(this, id);
+    if (c) U.undo('Saved repertorisation deleted', async () => { await H.IDB.put('cases', c); });
+  };
 
   window.addEventListener('resize', () => {
     if (!isMobile()) { const rv = $('rv'); if (rv) rv.classList.remove('open'); }
