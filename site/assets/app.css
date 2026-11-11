@@ -473,6 +473,17 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .pinbar{display:none}
 }
 
+/* ---------------- offline panel ---------------- */
+.offgrid{display:grid;grid-template-columns:1fr auto;gap:0 14px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.offrow{display:contents}
+.offrow>span{padding:8px 11px;font-size:12.5px;color:var(--ink-2);border-bottom:1px solid var(--line);background:var(--paper)}
+.offrow>b{padding:8px 11px;font-size:12.5px;text-align:right;border-bottom:1px solid var(--line);background:var(--paper);
+ font-variant-numeric:tabular-nums;font-weight:650}
+.offrow>b.good{color:var(--ok)}
+.offrow>b.bad{color:var(--gold)}
+.offgrid>*:nth-last-child(-n+2)>*{border-bottom:none}
+@media (max-width:520px){.offgrid{grid-template-columns:1fr auto}}
+
 /* ---------------- print ---------------- */
 .ph{display:none}
 @media print{

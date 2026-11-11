@@ -1,5 +1,29 @@
 # Changelog
 
+## 13.6.0 — 2026-11-11
+
+Offline durability. If the device is the only copy, the device needs a backup path.
+
+### Added
+- **Encrypted backup.** One `.rfb.json` file: AES‑256‑GCM, key derived with PBKDF2
+  (150,000 rounds, SHA‑256, 16‑byte salt, 12‑byte IV). Covers clinic cases, saved
+  repertorisations, study cards and streak, boards, language, theme and case name.
+  Wrong passphrase fails closed; nothing is written.
+- **Restore from file.** Merges by record ID into IndexedDB, restores SRS and settings,
+  then re-opens the readiness panel with the restored counts.
+- **Plain JSON export** for interoperability, explicitly labelled unencrypted.
+- **Download everything for offline.** Pre-caches the shell and `repertory.js` so the
+  full repertory works with the network off.
+- **Offline readiness panel** (Tools → Offline & backup): service-worker state, cached
+  file count and bytes, repertory availability, record counts, last backup age.
+- **Data-edition stamp** on every saved case (`rp2008-297r-44710l`).
+
+### Notes
+- Verified end to end: backup → wipe all stores → restore → 1 case, 1 repertorisation
+  and 4 study cards returned; a wrong passphrase was rejected by AES‑GCM.
+- Single-file builds report "service worker not used in this build" instead of a warning;
+  the pre-cache button is disabled there because there is nothing to cache.
+
 ## 13.5.0 — 2026-11-11
 
 Breadth and maintenance — the three things that make it a reference tool rather than
