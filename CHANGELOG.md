@@ -1,5 +1,23 @@
 # Changelog
 
+## 14.10.0 — 2026-11-11
+
+The last screen that still looked like the old app.
+
+### Changed
+- **Study centre rewritten.** The v12 panel — emoji, "🔥 streak", nine plain grey
+  buttons — is now the same visual language as everything else: a daily-remedy card with
+  the monograph one tap away, nine tiles with icons and one-line descriptions, and a
+  header that states the card count and streak in words.
+- Tiles wrap their text instead of clipping it; two columns on a phone.
+
+### Note on repertory editions
+I started the Kent/Knerr/Lippe work and stopped at the measurement. Kent 1897 has 6,732
+distinct "remedy" strings of which many are parse artefacts (`after`, `while`, `during`),
+183 match this app's remedies, and every link is ungraded. Knerr and Lippe are the same
+shape, with OCR damage in Lippe (`kali carbowicum`, `mercuhius`). Those editions need a
+parser fix and an alias table before any of it is trustworthy — not a quick pass.
+
 ## 14.9.0 — 2026-11-11
 
 Three small things, done properly.

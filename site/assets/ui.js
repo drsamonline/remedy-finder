@@ -1580,6 +1580,55 @@
   };
 
 
+
+  /* ---------- study centre (rewritten) ---------- */
+  U.showStudy = function () {
+    const daily = this.daily();
+    const streak = H.SRS.streak();
+    const cards = (H.SRS.all ? H.SRS.all().length : 0);
+    const m = $('md');
+    const tile = (id, icon, title, sub) => `<button class="btn bg study-tile" data-study="${id}">
+      <span class="st-ico">${ic(icon)}</span>
+      <span class="st-t">${title}</span><span class="st-s">${sub}</span></button>`;
+    m.innerHTML = `<div class="mh"><div><div class="mt">Study</div>
+      <div class="msu">${cards} card${cards === 1 ? '' : 's'} in rotation · ${streak.current}-day streak</div></div>
+      <button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <div class="study-daily">
+          <div class="sd-k">Daily remedy</div>
+          <div class="sd-n">${this.esc(daily.name)} <em>${this.esc(daily.latin)}</em></div>
+          <p>${this.esc(String(daily.description || '').slice(0, 220))}…</p>
+          <button class="btn bp btn-sm" id="sd-open">Open monograph</button>
+        </div>
+        <div class="study-grid">
+          ${tile('guess', 'results', 'Guess the remedy', 'Symptoms only — pick the remedy')}
+          ${tile('diff', 'compare', 'Differential', 'Two remedies, which fits?')}
+          ${tile('key', 'tools', 'Keynote', 'One characteristic line')}
+          ${tile('qcase', 'cases', 'Case', 'Short case, choose the remedy')}
+          ${tile('qrub', 'study', 'Rare-rubric quiz', 'Two or three remedies only')}
+          ${tile('srs', 'study', 'Spaced repetition', 'Review what is due today')}
+          ${tile('pot', 'info', 'Potency', 'Potency and dose questions')}
+          ${tile('cal', 'cases', 'Calendar', 'Your review history')}
+          ${tile('fam', 'graph', 'Families', 'Remedies by botanical family')}
+        </div>
+      </div>`;
+    this.om();
+    $('mc').onclick = () => this.cm();
+    $('sd-open').onclick = () => this.showDetail(daily.code);
+    m.querySelectorAll('[data-study]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.study;
+      if (k === 'qrub') { this.qRubric(); return; }
+      if (k === 'cal') { this.cm(); H.Cal.open(); return; }
+      if (k === 'fam') { this.cm(); H.Fam.open(); return; }
+      if (k === 'srs') { this.showSRS(); return; }
+      if (k === 'guess') { this.qGuess(); return; }
+      if (k === 'diff') { this.qDiff(); return; }
+      if (k === 'key') { this.qKey(); return; }
+      if (k === 'qcase') { this.qCase(); return; }
+      if (k === 'pot') { this.showPotency(); return; }
+    }));
+  };
+
   /* ---------- rare-rubric quiz ---------- */
   U.qRubric = function () {
     if (!window.HRF_RUB) return this.toast('The repertory is a separate file — use the full build for this quiz');

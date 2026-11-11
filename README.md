@@ -111,6 +111,7 @@ explicit durability layer:
 | **Keyboard picking** | Arrow keys move between rows, Home/End jump, Space or Enter toggles, focus stays on the row you just changed, and a live region announces the count |
 | **Case sheet download** | One case as a self-contained HTML file — open it anywhere, print it, or save as PDF |
 | **Board → case** | Turn the active board into a saved case, keeping its symptoms |
+| **Study centre** | Daily remedy, nine practice modes in one grid, streak and card count — same visual language as the rest of the app, no emoji |
 | **Rare-rubric quiz** | Which remedy does this two- or three-remedy rubric separate? Four options, graded feedback, next question |
 | **Case comparison** | Two saved cases side by side: symptoms in both, added, dropped, and how the top twelve remedies moved between visits |
 | **Printable case sheet** | One page per case: patient header, complaint, notes, symptoms with chapter and frequency, top ten remedies with scores, and quotations for the top three, with the data edition and a disclaimer in the footer |
