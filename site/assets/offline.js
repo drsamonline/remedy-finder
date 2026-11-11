@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.14.0';
+  U.appVersion = '13.15.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -340,6 +340,7 @@
     const code = await this.makeCode({ kind: 'cases', v: 1, dataVersion: this.dataVersion(), cases }, pin);
     $('tf-out').value = code;
     $('tf-out').select();
+    this.paintQR(code);
     this.toast(`${cases.length} case${cases.length > 1 ? 's' : ''} in one code — ${code.length} characters`);
   };
 
@@ -361,6 +362,7 @@
           <textarea id="tf-out" rows="3" readonly placeholder="A code appears here after you tap “Make code”."></textarea>
           <div class="xm" style="margin-top:8px"><button class="btn bg btn-sm" id="tf-copy">Copy</button>
             <button class="btn bg btn-sm" id="tf-save">Save as file</button></div>
+          <div class="qrbox" id="tf-qr"></div>
         </div>
         <div class="msec" style="margin-top:14px"><h4>Receive a code</h4>
           <textarea id="tf-in" rows="3" placeholder="Paste a transfer code"></textarea>
@@ -378,6 +380,7 @@
       const code = await this.makeCode({ kind: 'case', v: 1, dataVersion: this.dataVersion(), case: c }, pin);
       $('tf-out').value = code;
       $('tf-out').select();
+      this.paintQR(code);
       this.toast(`Code ready — ${code.length} characters, PIN ${pin.length} characters`);
     }));
     const many = $('tf-many');
@@ -385,6 +388,22 @@
     $('tf-copy').onclick = () => {
       const t = $('tf-out'); if (!t.value) return this.toast('Nothing to copy yet');
       t.select(); navigator.clipboard && navigator.clipboard.writeText(t.value); this.toast('Code copied');
+    };
+    this.paintQR = function (code) {
+      const box = $('tf-qr');
+      if (!box) return;
+      box.innerHTML = '';
+      if (!window.HRF_QR) return;
+      const qr = window.HRF_QR.encode(code);
+      if (!qr) { box.innerHTML = '<p class="srcl">Too long for a QR — use Copy or Save as file.</p>'; return; }
+      const cv = document.createElement('canvas');
+      cv.className = 'qrcanvas';
+      window.HRF_QR.draw(cv, code, Math.max(4, Math.floor(420 / (qr.size + 8))));
+      box.appendChild(cv);
+      const cap = document.createElement('p');
+      cap.className = 'srcl';
+      cap.textContent = `Scan with a phone camera · version ${qr.version} · ${code.length} characters`;
+      box.appendChild(cap);
     };
     const save = $('tf-save');
     if (save) save.onclick = () => {

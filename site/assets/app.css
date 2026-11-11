@@ -505,6 +505,10 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
 .offgrid>*:nth-last-child(-n+2)>*{border-bottom:none}
 @media (max-width:520px){.offgrid{grid-template-columns:1fr auto}}
 
+/* ---------------- transfer ---------------- */
+.qrbox{display:grid;place-items:center;gap:6px;margin-top:12px}
+.qrcanvas{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;image-rendering:pixelated;max-width:100%}
+
 /* ---------------- vault ---------------- */
 .vault-lock{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px;
  background:var(--paper);background-image:radial-gradient(circle at 50% 0%,var(--accent-soft),transparent 60%)}

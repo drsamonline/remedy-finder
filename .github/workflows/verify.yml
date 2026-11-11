@@ -21,6 +21,7 @@ jobs:
           node --check site/assets/offline.js
           node --check site/assets/packs.js
           node --check site/assets/vault.js
+          node --check site/assets/qr.js
           node --check site/assets/data.js
           node --check site/assets/i18n.js
           node --check site/assets/repertory.js

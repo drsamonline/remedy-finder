@@ -1,5 +1,34 @@
 # Changelog
 
+## 13.15.0 — 2026-11-11
+
+The last offline gap: get a case across without typing 476 characters.
+
+### Added
+- **QR codes for transfer codes.** A ~250-line QR encoder written into the app — byte
+  mode, ECC level L, versions 1–15, Reed–Solomon, penalty-scored mask selection. Any
+  phone camera reads it; paste the text into the receiving device.
+- Codes too long for a QR (batch transfers) say so and fall back to Copy / Save as file.
+
+### Verified against an external decoder
+Every matrix was decoded with OpenCV's `QRCodeDetector`, not eyeballed:
+
+| Payload | Version | Decodes |
+|---|---|---|
+| `hello` | 1 | yes |
+| 54 chars | 4 | yes |
+| 104 chars | 5 | yes |
+| 204 chars | 9 | yes |
+| 304 chars | 11 | yes |
+| 404 chars | 13 | yes |
+| 504 chars | 15 | yes |
+| All eight masks, v1 | — | 8/8 |
+| Live canvas, 476-char transfer code | 15 | yes |
+
+Three real bugs were found this way: masking was applied over function patterns, the
+format BCH used the wrong generator taps, and the second copy of the format bits was
+written in reverse order. None of them would have been visible by looking at the image.
+
 ## 13.14.0 — 2026-11-11
 
 Transfer in batches, and a reminder you set yourself.
