@@ -122,6 +122,19 @@ mark{background:var(--gold-soft);color:var(--ink);font-weight:600;border-radius:
 .pkn{display:block;font-size:12px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pkc{display:block;font-size:10.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 
+/* ---------------- boards ---------------- */
+.boards{display:flex;gap:5px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
+.boards::-webkit-scrollbar{display:none}
+.bd-chip{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 9px;border-radius:8px;
+ background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+.bd-chip:hover{background:var(--surface-2);color:var(--ink)}
+.bd-chip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+[data-theme="dark"] .bd-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.bd-chip span{font-size:10px;opacity:.7;font-variant-numeric:tabular-nums}
+.bd-chip.add{font-size:14px;padding:0 8px;font-weight:700}
+.langrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:var(--ink-2)}
+.langrow>span{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;margin-right:2px}
+
 /* ---------------- symptom list ---------------- */
 .symptoms{flex:1;overflow-y:auto;padding:0 8px 96px;scrollbar-width:thin;scroll-behavior:smooth}
 .symptoms::-webkit-scrollbar{width:9px}
@@ -499,13 +512,13 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
 <div class="shell">
   <nav class="rail" aria-label="Primary">
     <a class="rail-mark" href="index.html" aria-label="Remedy Finder home">✦</a>
-    <button class="rail-btn" data-view="find" aria-current="page"><svg class="i i-lg"><use href="#i-find"/></svg><em>Find</em></button>
-    <button class="rail-btn" data-view="cases"><svg class="i i-lg"><use href="#i-cases"/></svg><em>Cases</em></button>
-    <button class="rail-btn" data-view="study"><svg class="i i-lg"><use href="#i-study"/></svg><em>Study</em></button>
-    <button class="rail-btn" data-view="tools"><svg class="i i-lg"><use href="#i-tools"/></svg><em>Tools</em></button>
+    <button class="rail-btn" data-view="find" aria-current="page"><svg class="i i-lg"><use href="#i-find"/></svg><em data-i18n="find">Find</em></button>
+    <button class="rail-btn" data-view="cases"><svg class="i i-lg"><use href="#i-cases"/></svg><em data-i18n="cases">Cases</em></button>
+    <button class="rail-btn" data-view="study"><svg class="i i-lg"><use href="#i-study"/></svg><em data-i18n="study">Study</em></button>
+    <button class="rail-btn" data-view="tools"><svg class="i i-lg"><use href="#i-tools"/></svg><em data-i18n="tools">Tools</em></button>
     <div class="rail-spacer"></div>
-    <button class="rail-btn" id="b-th" aria-label="Toggle theme"><svg class="i i-lg" data-theme-icon><use href="#i-moon"/></svg><em>Theme</em></button>
-    <button class="rail-btn" id="b-about" aria-label="About"><svg class="i i-lg"><use href="#i-info"/></svg><em>About</em></button>
+    <button class="rail-btn" id="b-th" aria-label="Toggle theme"><svg class="i i-lg" data-theme-icon><use href="#i-moon"/></svg><em data-i18n="theme">Theme</em></button>
+    <button class="rail-btn" id="b-about" aria-label="About"><svg class="i i-lg"><use href="#i-info"/></svg><em data-i18n="about">About</em></button>
   </nav>
 
   <div class="main">
@@ -514,7 +527,7 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v13.2</div>
+          <div class="bsub">Repertory workbench · v13.3</div>
         </div>
       </div>
       <label class="casebar">
@@ -522,9 +535,9 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
         <input id="case-name" placeholder="Untitled case" autocomplete="off"/>
       </label>
       <div class="seg" role="tablist" aria-label="Mode">
-        <button class="tab" role="tab" aria-selected="true" data-mode="acute">Acute</button>
-        <button class="tab" role="tab" aria-selected="false" data-mode="constitutional">Constitutional</button>
-        <button class="tab" role="tab" aria-selected="false" data-mode="teaching">Teaching</button>
+        <button class="tab" role="tab" aria-selected="true" data-mode="acute" data-i18n="acute">Acute</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="constitutional" data-i18n="constitutional">Constitutional</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="teaching" data-i18n="teaching">Teaching</button>
       </div>
       <div class="topact">
         <button class="ib" data-view="tools" aria-label="Tools" title="Tools"><svg class="i"><use href="#i-tools"/></svg></button>
@@ -535,6 +548,7 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
 
     <div class="workspace">
       <section class="picker" aria-label="Symptom picker">
+        <div class="boards" id="boards" role="group" aria-label="Boards"></div>
         <div class="searchrow">
           <div class="sw">
             <svg class="i sic" aria-hidden="true"><use href="#i-find"/></svg>
@@ -549,7 +563,7 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
           <div class="tray" id="tray" style="display:none">
             <span class="trc" id="trc">0 selected</span>
             <div class="trch" id="trch"></div>
-            <button class="btn bp" id="b-find">Repertorise</button>
+            <button class="btn bp" id="b-find" data-i18n="repertorise">Repertorise</button>
           </div>
         </div>
       </section>
@@ -572,11 +586,11 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
 </div>
 
 <nav class="tabbar" aria-label="Sections">
-  <button data-view="find" aria-current="page"><svg class="i"><use href="#i-find"/></svg>Find</button>
-  <button data-view="results"><svg class="i"><use href="#i-results"/></svg>Results</button>
-  <button data-view="cases"><svg class="i"><use href="#i-cases"/></svg>Cases</button>
-  <button data-view="study"><svg class="i"><use href="#i-study"/></svg>Study</button>
-  <button data-view="tools"><svg class="i"><use href="#i-tools"/></svg>More</button>
+  <button data-view="find" aria-current="page"><svg class="i"><use href="#i-find"/></svg><span class="lbl" data-i18n="find">Find</span></button>
+  <button data-view="results"><svg class="i"><use href="#i-results"/></svg><span class="lbl" data-i18n="results">Results</span></button>
+  <button data-view="cases"><svg class="i"><use href="#i-cases"/></svg><span class="lbl" data-i18n="cases">Cases</span></button>
+  <button data-view="study"><svg class="i"><use href="#i-study"/></svg><span class="lbl" data-i18n="study">Study</span></button>
+  <button data-view="tools"><svg class="i"><use href="#i-tools"/></svg><span class="lbl" data-i18n="tools">More</span></button>
 </nav>
 
 <div class="mb" id="mb" role="dialog" aria-modal="true" aria-hidden="true"><div class="md" id="md"></div></div>
@@ -606,6 +620,101 @@ blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);b
   <button id="b-au"></button><button id="b-kb"></button>
 </div>
 
+<script>
+/* Remedy Finder — interface strings (EN / हिंदी / ગુજરાતી)
+   Repertory terms (symptom and remedy names) deliberately stay in English:
+   they are the vocabulary of the source books, not UI copy. */
+window.HRF_I18N = {
+  en: {
+    find: 'Find', cases: 'Cases', study: 'Study', tools: 'Tools', theme: 'Theme', about: 'About',
+    results: 'Results', more: 'More',
+    search: 'Search symptoms — typo tolerant',
+    repertorise: 'Repertorise', symptoms: 'symptoms', symptom: 'symptom',
+    acute: 'Acute', constitutional: 'Constitutional', teaching: 'Teaching',
+    save: 'Save', export: 'Export', print: 'Print', details: 'Details', compare: 'Compare',
+    graph: 'Graph', pin: 'Pin', pinned: 'Pinned', strike: 'Strike', back: 'Back',
+    match: 'Match', matched: 'Matched', grade3: 'Grade-3', unique: 'Unique',
+    topRemedies: 'Highest matching remedies', startCase: 'Start a case',
+    startHint: 'Pick the symptoms that are characteristic, not the ones every remedy has',
+    noMatch: 'No symptom matches', ranking: 'Ranking', remedies: 'remedies',
+    untitled: 'Untitled case', watch: 'Watching', struckOut: 'Struck out',
+    restore: 'Restore all', undo: 'Undo', boards: 'Boards', addBoard: 'Add board',
+    compareBoards: 'Compare boards', language: 'Language', strong: 'strong', doubtful: 'doubtful',
+    ordinary: 'ordinary', weightTip: 'click to change weight', pinTip: 'Pin to watch while you change symptoms',
+    strikeTip: 'Strike this remedy out (eliminative method)',
+    removeTip: 'Remove', howTo: 'How to read this',
+    howToBody: 'The number beside a symptom is how many remedies carry it — rare symptoms discriminate most. ★ marks a grade-3 (characteristic) link in the repertory.',
+    quickStarts: 'Quick starts',
+    quickBody: 'Load a pack on the left, or open Tools → Remedy explorer to browse by kingdom and family.',
+    offNote: 'Offline · no account · nothing leaves this device',
+    eduNote: 'Educational ranking only. Scores reflect similarity, not indication. Grade-3 links are marked ★.',
+    mental: 'Mental', general: 'General', modality: 'Modalities', respiratory: 'Respiratory',
+    digestive: 'Digestive', urinary: 'Urinary', skin: 'Skin', female: 'Female', male: 'Male',
+    sleep: 'Sleep', trauma: 'Trauma', musculoskeletal: 'Musculoskeletal', neurology: 'Neurology',
+    cardio: 'Cardiovascular', ocular: 'Ocular', aural: 'Aural', extremities: 'Extremities',
+    remediesGroup: 'Remedies', packs: 'Symptom packs'
+  },
+  hi: {
+    find: 'खोज', cases: 'केस', study: 'अध्ययन', tools: 'उपकरण', theme: 'थीम', about: 'परिचय',
+    results: 'परिणाम', more: 'अधिक',
+    search: 'लक्षण खोजें — वर्तनी की गलती चलेगी',
+    repertorise: 'रेपर्टरी बनाएँ', symptoms: 'लक्षण', symptom: 'लक्षण',
+    acute: 'तीव्र', constitutional: 'संवैधानिक', teaching: 'शिक्षण',
+    save: 'सहेजें', export: 'निर्यात', print: 'छापें', details: 'विवरण', compare: 'तुलना',
+    graph: 'ग्राफ़', pin: 'पिन', pinned: 'पिन किया', strike: 'हटाएँ', back: 'वापस',
+    match: 'मेल', matched: 'मेल खाए', grade3: 'ग्रेड-3', unique: 'विशिष्ट',
+    topRemedies: 'सर्वाधिक मेल खाती रेमेडी', startCase: 'केस शुरू करें',
+    startHint: 'वे लक्षण चुनें जो विशिष्ट हैं, वे नहीं जो हर रेमेडी में हैं',
+    noMatch: 'कोई लक्षण नहीं मिला', ranking: 'क्रम', remedies: 'रेमेडी',
+    untitled: 'बिना नाम का केस', watch: 'निगरानी', struckOut: 'हटाई गई',
+    restore: 'सब वापस लाएँ', undo: 'पूर्ववत', boards: 'बोर्ड', addBoard: 'बोर्ड जोड़ें',
+    compareBoards: 'बोर्ड तुलना', language: 'भाषा', strong: 'प्रबल', doubtful: 'संदिग्ध',
+    ordinary: 'सामान्य', weightTip: 'भार बदलने के लिए दबाएँ', pinTip: 'लक्षण बदलते समय इसे देखते रहें',
+    strikeTip: 'इस रेमेडी को हटा दें (निष्कासन विधि)',
+    removeTip: 'हटाएँ', howTo: 'इसे कैसे पढ़ें',
+    howToBody: 'लक्षण के आगे की संख्या बताती है कि कितनी रेमेडी में वह लक्षण है — दुर्लभ लक्षण सबसे अधिक भेद करते हैं। ★ = रेपर्टरी में ग्रेड-3 (विशिष्ट) संबंध।',
+    quickStarts: 'तुरंत शुरुआत',
+    quickBody: 'बाईं ओर से कोई पैक चुनें, या उपकरण → रेमेडी खोज से किंगडम और फ़ैमिली देखें।',
+    offNote: 'ऑफ़लाइन · कोई खाता नहीं · कुछ भी इस डिवाइस से बाहर नहीं जाता',
+    eduNote: 'केवल शैक्षणिक क्रम। अंक समानता दर्शाते हैं, संकेत नहीं। ग्रेड-3 संबंध ★ से चिह्नित।',
+    mental: 'मानसिक', general: 'सामान्य', modality: 'मॉडैलिटी', respiratory: 'श्वसन',
+    digestive: 'पाचन', urinary: 'मूत्र', skin: 'त्वचा', female: 'स्त्री', male: 'पुरुष',
+    sleep: 'नींद', trauma: 'आघात', musculoskeletal: 'अस्थि-पेशी', neurology: 'तंत्रिका',
+    cardio: 'हृदय', ocular: 'नेत्र', aural: 'कान', extremities: 'अंग',
+    remediesGroup: 'रेमेडी', packs: 'लक्षण पैक'
+  },
+  gu: {
+    find: 'શોધ', cases: 'કેસ', study: 'અભ્યાસ', tools: 'સાધનો', theme: 'થીમ', about: 'પરિચય',
+    results: 'પરિણામ', more: 'વધુ',
+    search: 'લક્ષણ શોધો — જોડણીની ભૂલ ચાલશે',
+    repertorise: 'રેપર્ટરી બનાવો', symptoms: 'લક્ષણ', symptom: 'લક્ષણ',
+    acute: 'તીવ્ર', constitutional: 'બંધારણીય', teaching: 'શિક્ષણ',
+    save: 'સાચવો', export: 'નિકાસ', print: 'છાપો', details: 'વિગત', compare: 'સરખામણી',
+    graph: 'ગ્રાફ', pin: 'પિન', pinned: 'પિન કરેલ', strike: 'દૂર કરો', back: 'પાછળ',
+    match: 'મેળ', matched: 'મેળ ખાધા', grade3: 'ગ્રેડ-3', unique: 'વિશિષ્ટ',
+    topRemedies: 'સૌથી વધુ મેળ ખાતા રેમેડી', startCase: 'કેસ શરૂ કરો',
+    startHint: 'એ લક્ષણો પસંદ કરો જે વિશિષ્ટ છે, જે દરેક રેમેડીમાં છે તે નહીં',
+    noMatch: 'કોઈ લક્ષણ મળ્યું નહીં', ranking: 'ક્રમ', remedies: 'રેમેડી',
+    untitled: 'નામ વગરનો કેસ', watch: 'નજર', struckOut: 'દૂર કરેલા',
+    restore: 'બધા પાછા લાવો', undo: 'પાછું લાવો', boards: 'બોર્ડ', addBoard: 'બોર્ડ ઉમેરો',
+    compareBoards: 'બોર્ડ સરખામણી', language: 'ભાષા', strong: 'પ્રબળ', doubtful: 'શંકાસ્પદ',
+    ordinary: 'સામાન્ય', weightTip: 'વજન બદલવા દબાવો', pinTip: 'લક્ષણો બદલતી વખતે આને જુઓ',
+    strikeTip: 'આ રેમેડી દૂર કરો (બાદ કરવાની રીત)',
+    removeTip: 'દૂર કરો', howTo: 'આ કેવી રીતે વાંચવું',
+    howToBody: 'લક્ષણની બાજુની સંખ્યા બતાવે છે કે કેટલી રેમેડીમાં તે લક્ષણ છે — દુર્લભ લક્ષણ સૌથી વધુ ભેદ કરે છે. ★ = રેપર્ટરીમાં ગ્રેડ-3 (વિશિષ્ટ) સંબંધ.',
+    quickStarts: 'ઝડપી શરૂઆત',
+    quickBody: 'ડાબી બાજુથી પેક પસંદ કરો, અથવા સાધનો → રેમેડી શોધમાં કિંગડમ અને ફેમિલી જુઓ.',
+    offNote: 'ઓફલાઇન · કોઈ ખાતું નહીં · કંઈ પણ આ ઉપકરણની બહાર જતું નથી',
+    eduNote: 'ફક્ત શૈક્ષણિક ક્રમ. આંકડા સામ્યતા દર્શાવે છે, સંકેત નહીં. ગ્રેડ-3 સંબંધ ★ થી ચિહ્નિત.',
+    mental: 'માનસિક', general: 'સામાન્ય', modality: 'મોડાલિટી', respiratory: 'શ્વસન',
+    digestive: 'પાચન', urinary: 'મૂત્ર', skin: 'ત્વચા', female: 'સ્ત્રી', male: 'પુરુષ',
+    sleep: 'ઊંઘ', trauma: 'આઘાત', musculoskeletal: 'અસ્થિ-સ્નાયુ', neurology: 'ચેતા',
+    cardio: 'હૃદય', ocular: 'નેત્ર', aural: 'કાન', extremities: 'અંગ',
+    remediesGroup: 'રેમેડી', packs: 'લક્ષણ પેક'
+  }
+};
+
+</script>
 <script>
 /* Data layer — generated from github.com/drsamonline/homoeopathic-materia-medica-repertory-json
    Symptom-remedy links: Repertorium Publicum (2008), graded 1-3. Source texts: Boericke 1906, Allen 1916. */
@@ -826,6 +935,95 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     return _remIdx;
   };
 
+  /* ---------- language ---------- */
+  const I18N = window.HRF_I18N || { en: {} };
+  U.lang = 'en';
+  U.t = function (k) { const L = I18N[this.lang] || I18N.en; return (L && L[k]) || I18N.en[k] || k; };
+  U.setLang = function (lang) {
+    if (!I18N[lang]) return;
+    this.lang = lang;
+    H.St.s('lang', lang);
+    this.applyLang();
+    this.rc(); this.rp(); this.rs(); this.rt();
+    if (this.s.view === 'results' && this.s.last) this.rr();
+    this.toast(lang === 'en' ? 'English' : lang === 'hi' ? 'हिंदी' : 'ગુજરાતી');
+  };
+  U.applyLang = function () {
+    document.documentElement.lang = this.lang === 'hi' ? 'hi' : this.lang === 'gu' ? 'gu' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.dataset.i18n;
+      const label = el.querySelector('em, .lbl');
+      if (label) label.textContent = this.t(k); else el.textContent = this.t(k);
+    });
+    const si = $('search'); if (si) si.placeholder = this.t('search');
+    const cn = $('case-name'); if (cn) cn.placeholder = this.t('untitled');
+  };
+
+  /* ---------- boards (rubric sets inside one case) ---------- */
+  const BOARD_KEY = 'boards';
+  U.boards = [];
+  U.activeBoard = null;
+  U.loadBoards = function () {
+    let b = H.St.g(BOARD_KEY, null);
+    if (!Array.isArray(b) || !b.length) b = [{ id: 'b1', name: 'Picture', sel: [], weights: {} }];
+    this.boards = b;
+    this.activeBoard = b[0].id;
+    const cur = b[0];
+    this.s.sel = new Set(cur.sel || []);
+    this.weights = Object.assign({}, cur.weights || {});
+  };
+  U.saveBoards = function () { H.St.s(BOARD_KEY, this.boards); };
+  U.syncBoard = function () {
+    const b = this.boards.find(x => x.id === this.activeBoard);
+    if (!b) return;
+    b.sel = [...this.s.sel];
+    b.weights = Object.assign({}, this.weights);
+    this.saveBoards();
+  };
+  U.boardSwitch = function (id) {
+    this.syncBoard();
+    const b = this.boards.find(x => x.id === id);
+    if (!b) return;
+    this.activeBoard = id;
+    this.s.sel = new Set(b.sel || []);
+    this.weights = Object.assign({}, b.weights || {});
+    this.rc(); this.rs(); this.rt(); this.renderBoards();
+    if (this.s.view === 'results') this.rr();
+  };
+  U.boardAdd = function () {
+    const name = prompt(this.t('addBoard') + ':', 'Board ' + (this.boards.length + 1));
+    if (!name) return;
+    this.syncBoard();
+    const id = 'b' + Date.now().toString(36);
+    this.boards.push({ id, name: name.slice(0, 24), sel: [], weights: {} });
+    this.saveBoards();
+    this.boardSwitch(id);
+  };
+  U.boardDelete = function (id) {
+    if (this.boards.length < 2) { this.toast('Keep at least one board'); return; }
+    const i = this.boards.findIndex(b => b.id === id);
+    if (i < 0) return;
+    const removed = this.boards.splice(i, 1)[0];
+    this.saveBoards();
+    if (this.activeBoard === id) this.boardSwitch(this.boards[0].id); else this.renderBoards();
+    this.undo(`Board “${removed.name}” deleted`, () => { this.boards.splice(i, 0, removed); this.saveBoards(); this.renderBoards(); });
+  };
+  U.renderBoards = function () {
+    const host = $('boards');
+    if (!host) return;
+    host.innerHTML = this.boards.map(b => {
+      const n = (b.sel || []).length;
+      const on = b.id === this.activeBoard;
+      return `<button class="bd-chip ${on ? 'on' : ''}" data-board="${b.id}" aria-pressed="${on}">
+        ${esc(b.name)}<span>${n}</span></button>`;
+    }).join('') + `<button class="bd-chip add" data-board-add="1" title="${this.t('addBoard')}">+</button>`;
+  };
+
+  const PACKNAME = {
+    hi: { fever: 'बुखार', cough: 'खांसी', headache: 'सिरदर्द', anxiety: 'चिंता', digestive: 'पाचन' },
+    gu: { fever: 'તાવ', cough: 'ઉધરસ', headache: 'માથું દુખવું', anxiety: 'ચિંતા', digestive: 'પાચન' }
+  };
+
   const PACKICON = {
     fever: '<svg class="i i-lg"><use href="#i-graph"/></svg>',
     cough: '<svg class="i i-lg"><use href="#i-study"/></svg>',
@@ -839,9 +1037,10 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.rc = function () {
     const host = $('cat-row');
     if (!host) return;
-    const items = [{ k: null, l: 'All' }, ...H.DB.cats];
+    const catName = c => (c.k && I18N[this.lang] && I18N[this.lang][c.k]) || c.l;
+    const items = [{ k: null, l: this.lang === 'en' ? 'All' : (this.lang === 'hi' ? 'सभी' : 'બધા') }, ...H.DB.cats];
     host.innerHTML = items.map(c =>
-      `<button class="cp" aria-pressed="${this.s.cat === c.k}" data-cat="${c.k ?? ''}">${esc(c.l)}</button>`).join('');
+      `<button class="cp" aria-pressed="${this.s.cat === c.k}" data-cat="${c.k ?? ''}">${esc(catName(c))}</button>`).join('');
   };
 
   /* ---------- packs ---------- */
@@ -851,7 +1050,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     host.innerHTML = H.DB.packs.map(p =>
       `<button class="pk" data-pack="${p.id}" aria-pressed="false">
          <span class="pke">${PACKICON[p.id] || ic('find', 'i-lg')}</span>
-         <span class="pkn">${esc(p.n)}</span><span class="pkc">${p.s.length} symptoms</span>
+         <span class="pkn">${esc(PACKNAME[this.lang] && PACKNAME[this.lang][p.id] || p.n)}</span><span class="pkc">${p.s.length} ${this.t('symptoms')}</span>
        </button>`).join('');
   };
 
@@ -867,7 +1066,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const hits = this.remedyIndex().filter(x => x.hay.includes(q)).slice(0, 8);
       if (hits.length) {
         html += `<div class="ss open" data-cat="__rem">
-          <button class="sh" aria-expanded="true" type="button"><span>Remedies</span><span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+          <button class="sh" aria-expanded="true" type="button"><span>${this.t('remediesGroup')}</span><span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
           <div class="sl">${hits.map(x => `<div class="sc rem" data-rem="${x.code}" role="button" tabindex="0">
             <span class="kd">${x.r.group.charAt(0).toUpperCase()}</span>
             <span>${this.hl(esc(x.r.name), q)}<em class="lt">${esc(x.r.latin)}</em></span>
@@ -882,7 +1081,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const open = this.s.open.has(cat.k) || (!!q && syms.length <= 40);
       html += `<div class="ss ${open ? 'open' : ''}" data-cat="${cat.k}">
         <button class="sh" aria-expanded="${open}" type="button">
-          <span>${cat.e} ${cat.l}</span><span class="ct">${syms.length}</span><span class="ch" aria-hidden="true">▸</span>
+          <span>${(I18N[this.lang] && I18N[this.lang][cat.k]) || cat.l}</span><span class="ct">${syms.length}</span><span class="ch" aria-hidden="true">▸</span>
         </button>
         <div class="sl">${syms.map(s => {
           const on = this.s.sel.has(s.id);
@@ -896,7 +1095,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
           </div>`;
         }).join('')}</div></div>`;
     });
-    host.innerHTML = html || `<div class="emp"><div class="emp-i">${ic("find","i-lg")}</div><div>No symptom matches “${esc(this.s.q)}”.</div></div>`;
+    host.innerHTML = html || `<div class="emp"><div class="emp-i">${ic("find","i-lg")}</div><div>${this.t('noMatch')} “${esc(this.s.q)}”.</div></div>`;
   };
 
   U.hl = function (t, q) {
@@ -907,12 +1106,13 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
 
   /* ---------- selection tray ---------- */
   U.rt = function () {
+    if (this.boards && this.boards.length) this.syncBoard();
     const tray = $('tray');
     if (!tray) return;
     const S = H.DB.symptoms;
     if (!this.s.sel.size) { tray.style.display = 'none'; return; }
     tray.style.display = 'flex';
-    $('trc').textContent = `${this.s.sel.size} symptom${this.s.sel.size > 1 ? 's' : ''}`;
+    $('trc').textContent = `${this.s.sel.size} ${this.s.sel.size > 1 ? this.t('symptoms') : this.t('symptom')}`;
     $('trch').innerHTML = [...this.s.sel].map(id => {
       const s = S[id];
       if (!s) return '';
@@ -920,7 +1120,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const glyph = m === 1.5 ? '+' : (m === 0.5 ? '−' : '·');
       const label = m === 1.5 ? 'strong' : (m === 0.5 ? 'doubtful' : 'ordinary');
       return `<span class="trc-chip w${m === 1.5 ? ' up' : (m === 0.5 ? ' down' : '')}">
-        <button class="wt" data-wt="${id}" title="Weight: ${label} — click to change" aria-label="Weight ${label}">${glyph}</button>
+        <button class="wt" data-wt="${id}" title="${this.t(label)} — ${this.t('weightTip')}" aria-label="${this.t(label)}">${glyph}</button>
         ${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>`;
     }).join('');
   };
@@ -972,16 +1172,16 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.rr = async function () {
     const v = $('rv');
     if (!v) return;
-    v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>Ranking ${this.s.sel.size} symptoms…</div></div>`;
+    v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>${this.t('ranking')} ${this.s.sel.size} ${this.t('symptoms')}…</div></div>`;
     this.openResults();
     const res = await H.W.rank([...this.s.sel], this.s.mode, this.weightMap());
     this.s.last = res;
     const S = H.DB.symptoms;
     const strip = `<div class="case-strip">${[...this.s.sel].map(id => S[id] ? `<span class="trc-chip">${esc(S[id].name)}<button data-rm2="${id}" aria-label="Remove">✕</button></span>` : '').join('')}</div>`;
     if (!res.length) {
-      v.innerHTML = `<div class="rh"><div><div class="rt">No matches</div><div class="rs">${this.s.sel.size} symptoms selected</div></div>
+      v.innerHTML = `<div class="rh"><div><div class="rt">${this.t('noMatch')}</div><div class="rs">${this.s.sel.size} symptoms selected</div></div>
         <div style="display:flex;gap:6px"><button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} Back</button><button class="btn bg" id="b-bk">${ic("back","i-sm")} Symptoms</button></div></div>
-        <div class="emp"><div class="emp-i">${ic("info","i-lg")}</div><div>${H.I.t('noRes')}</div></div>`;
+        <div class="emp"><div class="emp-i">${ic("info","i-lg")}</div><div>${this.t('noMatch')}</div></div>`;
       this.bre();
       return;
     }
@@ -990,8 +1190,8 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       const before = res.length;
       for (let i = res.length - 1; i >= 0; i--) if (this.struck.has(res[i].code)) res.splice(i, 1);
       if (!res.length) {
-        v.innerHTML = `<div class="rh"><div><div class="rt">Every remedy struck out</div><div class="rs">Nothing left to compare</div></div>
-          <div style="display:flex;gap:6px"><button class="btn bg" data-unstrike-all>Restore all</button><button class="btn bg" id="b-bk">← Symptoms</button></div></div>
+        v.innerHTML = `<div class="rh"><div><div class="rt">${this.t('struckOut')}</div><div class="rs">Nothing left to compare</div></div>
+          <div style="display:flex;gap:6px"><button class="btn bg" data-unstrike-all>${this.t('restore')}</button><button class="btn bg" id="b-bk">${this.t('symptoms')}</button></div></div>
           <div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>Eliminative repertorisation removed all ${before} remedies.</div></div>`;
         this.bre(); return;
       }
@@ -1006,19 +1206,19 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         <button data-unpin="${c}" aria-label="Unpin ${esc(r.name)}">✕</button></div>`;
     }).join('')}</div>` : '';
     v.innerHTML = `<div class="rh">
-        <div><div class="rt">${H.I.t('edu')}</div>
-          <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} strong, ${dn} doubtful` : ''; })()} · ${this.s.mode} mode</div></div>
+        <div><div class="rt">${this.t('topRemedies')}</div>
+          <div class="rs">${res.length} ${this.t('remedies')} · ${this.s.sel.size} ${this.t('symptoms')}${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} ${this.t('strong')}, ${dn} ${this.t('doubtful')}` : ''; })()} · ${this.t(this.s.mode)}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} Back</button>
-          <button class="btn bg" id="b-sv">${ic("save","i-sm")} Save</button>
-          <button class="btn bg" id="b-ex2">${ic("export","i-sm")} Export</button>
-          <button class="btn bg" id="b-pr">${ic("print","i-sm")} Print</button>
-          <button class="btn bg" id="b-bk">${ic("back","i-sm")} Symptoms</button>
+          <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} ${this.t('back')}</button>
+          <button class="btn bg" id="b-sv">${ic("save","i-sm")} ${this.t('save')}</button>
+          <button class="btn bg" id="b-ex2">${ic("export","i-sm")} ${this.t('export')}</button>
+          <button class="btn bg" id="b-pr">${ic("print","i-sm")} ${this.t('print')}</button>
+          <button class="btn bg" id="b-bk">${ic("back","i-sm")} ${this.t('symptoms')}</button>
         </div></div>
       ${strip}
       ${pinStrip}
-      ${struckList.length ? `<div class="struckbar"><span>Struck out ${struckList.length}:</span>${struckList.map(c => `<button data-unstrike="${c}">${esc(H.DB.remedies[c].name)} ✕</button>`).join('')}</div>` : ''}
-      <div class="disc"><strong>${H.I.t('ro')}</strong> ${H.I.t('rot')} Grade‑3 links are marked ★.</div>
+      ${struckList.length ? `<div class="struckbar"><span>${this.t('struckOut')} ${struckList.length}:</span>${struckList.map(c => `<button data-unstrike="${c}">${esc(H.DB.remedies[c].name)} ✕</button>`).join('')}</div>` : ''}
+      <div class="disc">${this.t('eduNote')}</div>
       ${res.slice(0, 25).map((r, i) => {
         const rm = H.DB.remedies[r.code];
         const pct = Math.min(100, Math.round(r.matchScore / top * 100));
@@ -1030,11 +1230,11 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
             <span class="rr ${i < 3 ? 'top' : ''}">${r.confidence}%</span>
           </div>
           <div class="scs">
-            <div class="sc2"><span class="sc2-l">Match</span><span class="sc2-v">${r.matchScore}</span>
+            <div class="sc2"><span class="sc2-l">${this.t('match')}</span><span class="sc2-v">${r.matchScore}</span>
               <div class="sb"><div class="sbf" style="width:${pct}%"></div></div></div>
-            <div class="sc2"><span class="sc2-l">Matched</span><span class="sc2-v">${r.matchCount}/${this.s.sel.size}</span></div>
-            <div class="sc2"><span class="sc2-l">Grade‑3</span><span class="sc2-v">${g3}</span></div>
-            <div class="sc2"><span class="sc2-l">Unique</span><span class="sc2-v">${r.diffScore}%</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('matched')}</span><span class="sc2-v">${r.matchCount}/${this.s.sel.size}</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('grade3')}</span><span class="sc2-v">${g3}</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('unique')}</span><span class="sc2-v">${r.diffScore}%</span></div>
           </div>
           <div class="ms">${(r.matchedIds || []).slice(0, 8).map(id => {
             const s = S[id];
@@ -1044,12 +1244,12 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
             return `<span class="msi ${u ? 'u' : ''}">${esc(s.name)}${star}</span>`;
           }).join('')}</div>
           <div class="ra">
-            <button class="btn bg" data-dt="${r.code}">Details</button>
-            <button class="btn bg" data-cm="${r.code}">${ic("compare","i-sm")} Compare</button>
-            <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} Graph</button>
-            <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} Study</button>
-            <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="Pin to watch while you change symptoms">${this.pins.has(r.code) ? 'Pinned' : 'Pin'}</button>
-            <button class="btn bg" data-strike="${r.code}" title="Strike this remedy out (eliminative method)">Strike</button>
+            <button class="btn bg" data-dt="${r.code}">${this.t('details')}</button>
+            <button class="btn bg" data-cm="${r.code}">${ic("compare","i-sm")} ${this.t('compare')}</button>
+            <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} ${this.t('graph')}</button>
+            <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} ${this.t('study')}</button>
+            <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="${this.t('pinTip')}">${this.pins.has(r.code) ? this.t('pinned') : this.t('pin')}</button>
+            <button class="btn bg" data-strike="${r.code}" title="${this.t('strikeTip')}">${this.t('strike')}</button>
             ${this.s.mode === 'teaching' ? `<button class="btn bg" data-ty="${r.code}">Why?</button>` : ''}
           </div></article>`;
       }).join('')}`;
@@ -1155,13 +1355,23 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       ['b-about', 'info', 'About & sources', 'Author, licence, data provenance']
     ];
     $('md').innerHTML = `<div class="mh"><div><div class="mt">Tools</div><div class="msu">Everything outside the finder</div></div><button class="ib" id="mc">✕</button></div>
-      <div class="mbd"><div class="xm">${items.map(([id, e, t, d]) => `
+      <div class="mbd">
+        <div class="langrow"><span>${this.t('language')}</span>
+          <button class="btn bg btn-sm ${this.lang === 'en' ? 'on' : ''}" data-lang="en">English</button>
+          <button class="btn bg btn-sm ${this.lang === 'hi' ? 'on' : ''}" data-lang="hi">हिंदी</button>
+          <button class="btn bg btn-sm ${this.lang === 'gu' ? 'on' : ''}" data-lang="gu">ગુજરાતી</button>
+          <button class="btn bg btn-sm" data-boardcmp="1">${this.t('compareBoards')}</button>
+        </div>
+        <div class="xm">${items.map(([id, e, t, d]) => `
         <button class="btn bg" data-tool="${id}" style="justify-content:flex-start;text-align:left;min-height:68px;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 14px">
           <span style="font-weight:700;display:flex;align-items:center;gap:7px">${ic(e)} ${t}</span><span style="font-size:11.5px;color:var(--ink-2);font-weight:500;white-space:normal;text-align:left">${d}</span>
         </button>`).join('')}</div>
-        <p class="srcl" style="margin-top:14px">Offline · no account · nothing leaves this device</p></div>`;
+        <p class="srcl" style="margin-top:14px">${this.t('offNote')}</p></div>`;
     this.om();
     $('mc').onclick = () => this.cm();
+    document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => { this.cm(); this.setLang(b.dataset.lang); }));
+    const bc = document.querySelector('[data-boardcmp]');
+    if (bc) bc.addEventListener('click', () => this.boardCompare());
     document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
       this.cm();
       const t = $(b.dataset.tool);
@@ -1185,6 +1395,15 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
       if (this.s.view === 'results') this.rr();
     }));
     document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => this.view(b.dataset.view)));
+    const bb = $('boards');
+    if (bb) bb.addEventListener('click', e => {
+      const add = e.target.closest('[data-board-add]');
+      if (add) { this.boardAdd(); return; }
+      const c = e.target.closest('[data-board]');
+      if (!c) return;
+      if (e.target.closest('[data-board-del]')) { this.boardDelete(c.dataset.board); return; }
+      this.boardSwitch(c.dataset.board);
+    });
 
     const si = $('search'), sc = $('sc');
     let t = null;
@@ -1303,6 +1522,57 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     window.addEventListener('afterprint', done);
     setTimeout(() => window.print(), 90);
   };
+
+  /* ---------- compare boards ---------- */
+  U.boardCompare = function () {
+    const boards = this.boards.filter(b => (b.sel || []).length);
+    if (boards.length < 2) { this.toast('Add symptoms to two boards first'); return; }
+    const rows = {};
+    boards.forEach((b) => {
+      const res = H.Sc.rank(b.sel, this.s.mode, b.weights || {});
+      res.slice(0, 12).forEach((r, i) => {
+        if (!rows[r.code]) rows[r.code] = { code: r.code, rank: {}, score: {}, hits: 0 };
+        rows[r.code].rank[b.id] = i + 1;
+        rows[r.code].score[b.id] = r.matchScore;
+        rows[r.code].hits++;
+      });
+    });
+    const list = Object.values(rows).sort((a, b) => b.hits - a.hits ||
+      (Object.values(a.rank).reduce((x, y) => x + y, 0) / a.hits) - (Object.values(b.rank).reduce((x, y) => x + y, 0) / b.hits));
+    const m = $('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">${this.t('compareBoards')}</div>
+        <div class="msu">${boards.length} boards · top 12 each · ${this.t(this.s.mode)}</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <div class="mx-wrap"><table class="mx"><thead><tr><th class="sym-col">Remedy</th>
+          ${boards.map(b => `<th>${esc(b.name)}<br><span style="font-weight:500;opacity:.7">${(b.sel || []).length} sx</span></th>`).join('')}
+          <th>In</th></tr></thead><tbody>
+          ${list.slice(0, 30).map(x => {
+            const r = H.DB.remedies[x.code];
+            const cls = x.hits === boards.length ? 'style="background:var(--accent-soft)"' : '';
+            return `<tr ${cls}><td class="sym-cell">${esc(r.name)}<div style="font-size:10.5px;color:var(--ink-3);font-style:italic">${esc(r.latin)}</div></td>
+              ${boards.map(b => `<td>${x.rank[b.id] ? '#' + x.rank[b.id] + ' <span style="font-size:10px;color:var(--ink-3)">' + x.score[b.id] + '</span>' : '—'}</td>`).join('')}
+              <td><strong>${x.hits}</strong>/${boards.length}</td></tr>`;
+          }).join('')}
+        </tbody></table></div>
+        <p class="srcl" style="margin-top:10px">Rows shaded green appear in every board — the remedy that keeps returning across pictures.</p>
+      </div>`;
+    this.om();
+    $('mc').onclick = () => this.cm();
+  };
+
+  /* ---------- boot ---------- */
+  const baseInit = U.init;
+  U.init = async function () {
+    this.lang = H.St.g('lang', 'en');
+    if (!I18N[this.lang]) this.lang = 'en';
+    this.loadBoards();
+    await baseInit.call(this);
+    this.applyLang();
+    this.renderBoards();
+    this.renderBoardBar();
+  };
+
+  U.renderBoardBar = function () { this.renderBoards(); };
 
   /* ---------- theme hook ---------- */
   const baseUt = U.ut;

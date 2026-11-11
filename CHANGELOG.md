@@ -1,5 +1,22 @@
 # Changelog
 
+## 13.3.0 — 2026-11-11
+
+### Added
+- **Boards.** Several named rubric sets inside one case — acute, constitutional, family
+  history — each with its own symptoms and weights. Switch with a chip above the search
+  box; the selection and weights are remembered per board and persisted locally.
+- **Compare boards.** A table of the top 12 remedies per board with rank and score,
+  sorted by how many boards a remedy appears in; remedies present in every board are
+  shaded — the ones that keep returning across pictures.
+- **Interface in हिंदी and ગુજરાતી.** Rail, tabs, search, chapters, packs, tray, results,
+  buttons, weights and tool sheet. Repertory terms (symptom and remedy names) stay in
+  English by design. Language is remembered; a switch sits at the top of the Tools sheet.
+
+### Changed
+- Data unchanged at 178 remedies / 634 symptoms / 30,412 links; single file 575 KB
+  (the string table is 10 KB).
+
 ## 13.2.0 — 2026-11-11
 
 Four more from the backlog, still zero dependencies.

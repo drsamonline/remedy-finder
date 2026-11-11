@@ -8,6 +8,7 @@ css = (site / 'assets/app.css').read_text(encoding='utf-8')
 data = (site / 'assets/data.js').read_text(encoding='utf-8')
 app = (site / 'assets/app.js').read_text(encoding='utf-8')
 ui = (site / 'assets/ui.js').read_text(encoding='utf-8')
+i18n = (site / 'assets/i18n.js').read_text(encoding='utf-8')
 icon = (site / 'assets/icon.svg').read_text(encoding='utf-8')
 
 html = html.replace('<link rel="stylesheet" href="assets/app.css"/>', '<style>\n' + css + '\n</style>')
@@ -15,6 +16,7 @@ html = html.replace('<link rel="manifest" href="manifest.webmanifest"/>', '')
 html = html.replace('<link rel="icon" href="assets/icon.svg" type="image/svg+xml"/>',
                     '<link rel="icon" href="data:image/svg+xml;base64,' +
                     __import__('base64').b64encode(icon.encode()).decode() + '"/>')
+html = html.replace('<script src="assets/i18n.js"></script>', '<script>\n' + i18n + '\n</script>')
 html = html.replace('<script src="assets/data.js"></script>', '<script>\n' + data + '\n</script>')
 html = html.replace('<script src="assets/app.js"></script>', '<script>\n' + app + '\n</script>')
 html = html.replace('<script src="assets/ui.js"></script>', '<script>\n' + ui + '\n</script>')

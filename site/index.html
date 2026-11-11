@@ -37,13 +37,13 @@
 <div class="shell">
   <nav class="rail" aria-label="Primary">
     <a class="rail-mark" href="index.html" aria-label="Remedy Finder home">✦</a>
-    <button class="rail-btn" data-view="find" aria-current="page"><svg class="i i-lg"><use href="#i-find"/></svg><em>Find</em></button>
-    <button class="rail-btn" data-view="cases"><svg class="i i-lg"><use href="#i-cases"/></svg><em>Cases</em></button>
-    <button class="rail-btn" data-view="study"><svg class="i i-lg"><use href="#i-study"/></svg><em>Study</em></button>
-    <button class="rail-btn" data-view="tools"><svg class="i i-lg"><use href="#i-tools"/></svg><em>Tools</em></button>
+    <button class="rail-btn" data-view="find" aria-current="page"><svg class="i i-lg"><use href="#i-find"/></svg><em data-i18n="find">Find</em></button>
+    <button class="rail-btn" data-view="cases"><svg class="i i-lg"><use href="#i-cases"/></svg><em data-i18n="cases">Cases</em></button>
+    <button class="rail-btn" data-view="study"><svg class="i i-lg"><use href="#i-study"/></svg><em data-i18n="study">Study</em></button>
+    <button class="rail-btn" data-view="tools"><svg class="i i-lg"><use href="#i-tools"/></svg><em data-i18n="tools">Tools</em></button>
     <div class="rail-spacer"></div>
-    <button class="rail-btn" id="b-th" aria-label="Toggle theme"><svg class="i i-lg" data-theme-icon><use href="#i-moon"/></svg><em>Theme</em></button>
-    <button class="rail-btn" id="b-about" aria-label="About"><svg class="i i-lg"><use href="#i-info"/></svg><em>About</em></button>
+    <button class="rail-btn" id="b-th" aria-label="Toggle theme"><svg class="i i-lg" data-theme-icon><use href="#i-moon"/></svg><em data-i18n="theme">Theme</em></button>
+    <button class="rail-btn" id="b-about" aria-label="About"><svg class="i i-lg"><use href="#i-info"/></svg><em data-i18n="about">About</em></button>
   </nav>
 
   <div class="main">
@@ -52,7 +52,7 @@
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v13.2</div>
+          <div class="bsub">Repertory workbench · v13.3</div>
         </div>
       </div>
       <label class="casebar">
@@ -60,9 +60,9 @@
         <input id="case-name" placeholder="Untitled case" autocomplete="off"/>
       </label>
       <div class="seg" role="tablist" aria-label="Mode">
-        <button class="tab" role="tab" aria-selected="true" data-mode="acute">Acute</button>
-        <button class="tab" role="tab" aria-selected="false" data-mode="constitutional">Constitutional</button>
-        <button class="tab" role="tab" aria-selected="false" data-mode="teaching">Teaching</button>
+        <button class="tab" role="tab" aria-selected="true" data-mode="acute" data-i18n="acute">Acute</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="constitutional" data-i18n="constitutional">Constitutional</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="teaching" data-i18n="teaching">Teaching</button>
       </div>
       <div class="topact">
         <button class="ib" data-view="tools" aria-label="Tools" title="Tools"><svg class="i"><use href="#i-tools"/></svg></button>
@@ -73,6 +73,7 @@
 
     <div class="workspace">
       <section class="picker" aria-label="Symptom picker">
+        <div class="boards" id="boards" role="group" aria-label="Boards"></div>
         <div class="searchrow">
           <div class="sw">
             <svg class="i sic" aria-hidden="true"><use href="#i-find"/></svg>
@@ -87,7 +88,7 @@
           <div class="tray" id="tray" style="display:none">
             <span class="trc" id="trc">0 selected</span>
             <div class="trch" id="trch"></div>
-            <button class="btn bp" id="b-find">Repertorise</button>
+            <button class="btn bp" id="b-find" data-i18n="repertorise">Repertorise</button>
           </div>
         </div>
       </section>
@@ -110,11 +111,11 @@
 </div>
 
 <nav class="tabbar" aria-label="Sections">
-  <button data-view="find" aria-current="page"><svg class="i"><use href="#i-find"/></svg>Find</button>
-  <button data-view="results"><svg class="i"><use href="#i-results"/></svg>Results</button>
-  <button data-view="cases"><svg class="i"><use href="#i-cases"/></svg>Cases</button>
-  <button data-view="study"><svg class="i"><use href="#i-study"/></svg>Study</button>
-  <button data-view="tools"><svg class="i"><use href="#i-tools"/></svg>More</button>
+  <button data-view="find" aria-current="page"><svg class="i"><use href="#i-find"/></svg><span class="lbl" data-i18n="find">Find</span></button>
+  <button data-view="results"><svg class="i"><use href="#i-results"/></svg><span class="lbl" data-i18n="results">Results</span></button>
+  <button data-view="cases"><svg class="i"><use href="#i-cases"/></svg><span class="lbl" data-i18n="cases">Cases</span></button>
+  <button data-view="study"><svg class="i"><use href="#i-study"/></svg><span class="lbl" data-i18n="study">Study</span></button>
+  <button data-view="tools"><svg class="i"><use href="#i-tools"/></svg><span class="lbl" data-i18n="tools">More</span></button>
 </nav>
 
 <div class="mb" id="mb" role="dialog" aria-modal="true" aria-hidden="true"><div class="md" id="md"></div></div>
@@ -144,6 +145,7 @@
   <button id="b-au"></button><button id="b-kb"></button>
 </div>
 
+<script src="assets/i18n.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/app.js"></script>
 <script src="assets/ui.js"></script>

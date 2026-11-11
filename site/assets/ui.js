@@ -36,6 +36,95 @@
     return _remIdx;
   };
 
+  /* ---------- language ---------- */
+  const I18N = window.HRF_I18N || { en: {} };
+  U.lang = 'en';
+  U.t = function (k) { const L = I18N[this.lang] || I18N.en; return (L && L[k]) || I18N.en[k] || k; };
+  U.setLang = function (lang) {
+    if (!I18N[lang]) return;
+    this.lang = lang;
+    H.St.s('lang', lang);
+    this.applyLang();
+    this.rc(); this.rp(); this.rs(); this.rt();
+    if (this.s.view === 'results' && this.s.last) this.rr();
+    this.toast(lang === 'en' ? 'English' : lang === 'hi' ? 'हिंदी' : 'ગુજરાતી');
+  };
+  U.applyLang = function () {
+    document.documentElement.lang = this.lang === 'hi' ? 'hi' : this.lang === 'gu' ? 'gu' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.dataset.i18n;
+      const label = el.querySelector('em, .lbl');
+      if (label) label.textContent = this.t(k); else el.textContent = this.t(k);
+    });
+    const si = $('search'); if (si) si.placeholder = this.t('search');
+    const cn = $('case-name'); if (cn) cn.placeholder = this.t('untitled');
+  };
+
+  /* ---------- boards (rubric sets inside one case) ---------- */
+  const BOARD_KEY = 'boards';
+  U.boards = [];
+  U.activeBoard = null;
+  U.loadBoards = function () {
+    let b = H.St.g(BOARD_KEY, null);
+    if (!Array.isArray(b) || !b.length) b = [{ id: 'b1', name: 'Picture', sel: [], weights: {} }];
+    this.boards = b;
+    this.activeBoard = b[0].id;
+    const cur = b[0];
+    this.s.sel = new Set(cur.sel || []);
+    this.weights = Object.assign({}, cur.weights || {});
+  };
+  U.saveBoards = function () { H.St.s(BOARD_KEY, this.boards); };
+  U.syncBoard = function () {
+    const b = this.boards.find(x => x.id === this.activeBoard);
+    if (!b) return;
+    b.sel = [...this.s.sel];
+    b.weights = Object.assign({}, this.weights);
+    this.saveBoards();
+  };
+  U.boardSwitch = function (id) {
+    this.syncBoard();
+    const b = this.boards.find(x => x.id === id);
+    if (!b) return;
+    this.activeBoard = id;
+    this.s.sel = new Set(b.sel || []);
+    this.weights = Object.assign({}, b.weights || {});
+    this.rc(); this.rs(); this.rt(); this.renderBoards();
+    if (this.s.view === 'results') this.rr();
+  };
+  U.boardAdd = function () {
+    const name = prompt(this.t('addBoard') + ':', 'Board ' + (this.boards.length + 1));
+    if (!name) return;
+    this.syncBoard();
+    const id = 'b' + Date.now().toString(36);
+    this.boards.push({ id, name: name.slice(0, 24), sel: [], weights: {} });
+    this.saveBoards();
+    this.boardSwitch(id);
+  };
+  U.boardDelete = function (id) {
+    if (this.boards.length < 2) { this.toast('Keep at least one board'); return; }
+    const i = this.boards.findIndex(b => b.id === id);
+    if (i < 0) return;
+    const removed = this.boards.splice(i, 1)[0];
+    this.saveBoards();
+    if (this.activeBoard === id) this.boardSwitch(this.boards[0].id); else this.renderBoards();
+    this.undo(`Board “${removed.name}” deleted`, () => { this.boards.splice(i, 0, removed); this.saveBoards(); this.renderBoards(); });
+  };
+  U.renderBoards = function () {
+    const host = $('boards');
+    if (!host) return;
+    host.innerHTML = this.boards.map(b => {
+      const n = (b.sel || []).length;
+      const on = b.id === this.activeBoard;
+      return `<button class="bd-chip ${on ? 'on' : ''}" data-board="${b.id}" aria-pressed="${on}">
+        ${esc(b.name)}<span>${n}</span></button>`;
+    }).join('') + `<button class="bd-chip add" data-board-add="1" title="${this.t('addBoard')}">+</button>`;
+  };
+
+  const PACKNAME = {
+    hi: { fever: 'बुखार', cough: 'खांसी', headache: 'सिरदर्द', anxiety: 'चिंता', digestive: 'पाचन' },
+    gu: { fever: 'તાવ', cough: 'ઉધરસ', headache: 'માથું દુખવું', anxiety: 'ચિંતા', digestive: 'પાચન' }
+  };
+
   const PACKICON = {
     fever: '<svg class="i i-lg"><use href="#i-graph"/></svg>',
     cough: '<svg class="i i-lg"><use href="#i-study"/></svg>',
@@ -49,9 +138,10 @@
   U.rc = function () {
     const host = $('cat-row');
     if (!host) return;
-    const items = [{ k: null, l: 'All' }, ...H.DB.cats];
+    const catName = c => (c.k && I18N[this.lang] && I18N[this.lang][c.k]) || c.l;
+    const items = [{ k: null, l: this.lang === 'en' ? 'All' : (this.lang === 'hi' ? 'सभी' : 'બધા') }, ...H.DB.cats];
     host.innerHTML = items.map(c =>
-      `<button class="cp" aria-pressed="${this.s.cat === c.k}" data-cat="${c.k ?? ''}">${esc(c.l)}</button>`).join('');
+      `<button class="cp" aria-pressed="${this.s.cat === c.k}" data-cat="${c.k ?? ''}">${esc(catName(c))}</button>`).join('');
   };
 
   /* ---------- packs ---------- */
@@ -61,7 +151,7 @@
     host.innerHTML = H.DB.packs.map(p =>
       `<button class="pk" data-pack="${p.id}" aria-pressed="false">
          <span class="pke">${PACKICON[p.id] || ic('find', 'i-lg')}</span>
-         <span class="pkn">${esc(p.n)}</span><span class="pkc">${p.s.length} symptoms</span>
+         <span class="pkn">${esc(PACKNAME[this.lang] && PACKNAME[this.lang][p.id] || p.n)}</span><span class="pkc">${p.s.length} ${this.t('symptoms')}</span>
        </button>`).join('');
   };
 
@@ -77,7 +167,7 @@
       const hits = this.remedyIndex().filter(x => x.hay.includes(q)).slice(0, 8);
       if (hits.length) {
         html += `<div class="ss open" data-cat="__rem">
-          <button class="sh" aria-expanded="true" type="button"><span>Remedies</span><span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
+          <button class="sh" aria-expanded="true" type="button"><span>${this.t('remediesGroup')}</span><span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
           <div class="sl">${hits.map(x => `<div class="sc rem" data-rem="${x.code}" role="button" tabindex="0">
             <span class="kd">${x.r.group.charAt(0).toUpperCase()}</span>
             <span>${this.hl(esc(x.r.name), q)}<em class="lt">${esc(x.r.latin)}</em></span>
@@ -92,7 +182,7 @@
       const open = this.s.open.has(cat.k) || (!!q && syms.length <= 40);
       html += `<div class="ss ${open ? 'open' : ''}" data-cat="${cat.k}">
         <button class="sh" aria-expanded="${open}" type="button">
-          <span>${cat.e} ${cat.l}</span><span class="ct">${syms.length}</span><span class="ch" aria-hidden="true">▸</span>
+          <span>${(I18N[this.lang] && I18N[this.lang][cat.k]) || cat.l}</span><span class="ct">${syms.length}</span><span class="ch" aria-hidden="true">▸</span>
         </button>
         <div class="sl">${syms.map(s => {
           const on = this.s.sel.has(s.id);
@@ -106,7 +196,7 @@
           </div>`;
         }).join('')}</div></div>`;
     });
-    host.innerHTML = html || `<div class="emp"><div class="emp-i">${ic("find","i-lg")}</div><div>No symptom matches “${esc(this.s.q)}”.</div></div>`;
+    host.innerHTML = html || `<div class="emp"><div class="emp-i">${ic("find","i-lg")}</div><div>${this.t('noMatch')} “${esc(this.s.q)}”.</div></div>`;
   };
 
   U.hl = function (t, q) {
@@ -117,12 +207,13 @@
 
   /* ---------- selection tray ---------- */
   U.rt = function () {
+    if (this.boards && this.boards.length) this.syncBoard();
     const tray = $('tray');
     if (!tray) return;
     const S = H.DB.symptoms;
     if (!this.s.sel.size) { tray.style.display = 'none'; return; }
     tray.style.display = 'flex';
-    $('trc').textContent = `${this.s.sel.size} symptom${this.s.sel.size > 1 ? 's' : ''}`;
+    $('trc').textContent = `${this.s.sel.size} ${this.s.sel.size > 1 ? this.t('symptoms') : this.t('symptom')}`;
     $('trch').innerHTML = [...this.s.sel].map(id => {
       const s = S[id];
       if (!s) return '';
@@ -130,7 +221,7 @@
       const glyph = m === 1.5 ? '+' : (m === 0.5 ? '−' : '·');
       const label = m === 1.5 ? 'strong' : (m === 0.5 ? 'doubtful' : 'ordinary');
       return `<span class="trc-chip w${m === 1.5 ? ' up' : (m === 0.5 ? ' down' : '')}">
-        <button class="wt" data-wt="${id}" title="Weight: ${label} — click to change" aria-label="Weight ${label}">${glyph}</button>
+        <button class="wt" data-wt="${id}" title="${this.t(label)} — ${this.t('weightTip')}" aria-label="${this.t(label)}">${glyph}</button>
         ${esc(s.name)}<button data-rm="${id}" aria-label="Remove ${esc(s.name)}">✕</button></span>`;
     }).join('');
   };
@@ -182,16 +273,16 @@
   U.rr = async function () {
     const v = $('rv');
     if (!v) return;
-    v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>Ranking ${this.s.sel.size} symptoms…</div></div>`;
+    v.innerHTML = `<div class="emp"><div class="emp-i">${ic("results","i-lg")}</div><div>${this.t('ranking')} ${this.s.sel.size} ${this.t('symptoms')}…</div></div>`;
     this.openResults();
     const res = await H.W.rank([...this.s.sel], this.s.mode, this.weightMap());
     this.s.last = res;
     const S = H.DB.symptoms;
     const strip = `<div class="case-strip">${[...this.s.sel].map(id => S[id] ? `<span class="trc-chip">${esc(S[id].name)}<button data-rm2="${id}" aria-label="Remove">✕</button></span>` : '').join('')}</div>`;
     if (!res.length) {
-      v.innerHTML = `<div class="rh"><div><div class="rt">No matches</div><div class="rs">${this.s.sel.size} symptoms selected</div></div>
+      v.innerHTML = `<div class="rh"><div><div class="rt">${this.t('noMatch')}</div><div class="rs">${this.s.sel.size} symptoms selected</div></div>
         <div style="display:flex;gap:6px"><button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} Back</button><button class="btn bg" id="b-bk">${ic("back","i-sm")} Symptoms</button></div></div>
-        <div class="emp"><div class="emp-i">${ic("info","i-lg")}</div><div>${H.I.t('noRes')}</div></div>`;
+        <div class="emp"><div class="emp-i">${ic("info","i-lg")}</div><div>${this.t('noMatch')}</div></div>`;
       this.bre();
       return;
     }
@@ -200,8 +291,8 @@
       const before = res.length;
       for (let i = res.length - 1; i >= 0; i--) if (this.struck.has(res[i].code)) res.splice(i, 1);
       if (!res.length) {
-        v.innerHTML = `<div class="rh"><div><div class="rt">Every remedy struck out</div><div class="rs">Nothing left to compare</div></div>
-          <div style="display:flex;gap:6px"><button class="btn bg" data-unstrike-all>Restore all</button><button class="btn bg" id="b-bk">← Symptoms</button></div></div>
+        v.innerHTML = `<div class="rh"><div><div class="rt">${this.t('struckOut')}</div><div class="rs">Nothing left to compare</div></div>
+          <div style="display:flex;gap:6px"><button class="btn bg" data-unstrike-all>${this.t('restore')}</button><button class="btn bg" id="b-bk">${this.t('symptoms')}</button></div></div>
           <div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>Eliminative repertorisation removed all ${before} remedies.</div></div>`;
         this.bre(); return;
       }
@@ -216,19 +307,19 @@
         <button data-unpin="${c}" aria-label="Unpin ${esc(r.name)}">✕</button></div>`;
     }).join('')}</div>` : '';
     v.innerHTML = `<div class="rh">
-        <div><div class="rt">${H.I.t('edu')}</div>
-          <div class="rs">${res.length} remedies · ${this.s.sel.size} symptoms${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} strong, ${dn} doubtful` : ''; })()} · ${this.s.mode} mode</div></div>
+        <div><div class="rt">${this.t('topRemedies')}</div>
+          <div class="rs">${res.length} ${this.t('remedies')} · ${this.s.sel.size} ${this.t('symptoms')}${(() => { const w = this.weightMap(); const up = Object.values(w).filter(v => v > 1).length; const dn = Object.values(w).filter(v => v < 1).length; return (up || dn) ? ` · ${up} ${this.t('strong')}, ${dn} ${this.t('doubtful')}` : ''; })()} · ${this.t(this.s.mode)}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} Back</button>
-          <button class="btn bg" id="b-sv">${ic("save","i-sm")} Save</button>
-          <button class="btn bg" id="b-ex2">${ic("export","i-sm")} Export</button>
-          <button class="btn bg" id="b-pr">${ic("print","i-sm")} Print</button>
-          <button class="btn bg" id="b-bk">${ic("back","i-sm")} Symptoms</button>
+          <button class="btn bg mobile-close" data-close-results>${ic("back","i-sm")} ${this.t('back')}</button>
+          <button class="btn bg" id="b-sv">${ic("save","i-sm")} ${this.t('save')}</button>
+          <button class="btn bg" id="b-ex2">${ic("export","i-sm")} ${this.t('export')}</button>
+          <button class="btn bg" id="b-pr">${ic("print","i-sm")} ${this.t('print')}</button>
+          <button class="btn bg" id="b-bk">${ic("back","i-sm")} ${this.t('symptoms')}</button>
         </div></div>
       ${strip}
       ${pinStrip}
-      ${struckList.length ? `<div class="struckbar"><span>Struck out ${struckList.length}:</span>${struckList.map(c => `<button data-unstrike="${c}">${esc(H.DB.remedies[c].name)} ✕</button>`).join('')}</div>` : ''}
-      <div class="disc"><strong>${H.I.t('ro')}</strong> ${H.I.t('rot')} Grade‑3 links are marked ★.</div>
+      ${struckList.length ? `<div class="struckbar"><span>${this.t('struckOut')} ${struckList.length}:</span>${struckList.map(c => `<button data-unstrike="${c}">${esc(H.DB.remedies[c].name)} ✕</button>`).join('')}</div>` : ''}
+      <div class="disc">${this.t('eduNote')}</div>
       ${res.slice(0, 25).map((r, i) => {
         const rm = H.DB.remedies[r.code];
         const pct = Math.min(100, Math.round(r.matchScore / top * 100));
@@ -240,11 +331,11 @@
             <span class="rr ${i < 3 ? 'top' : ''}">${r.confidence}%</span>
           </div>
           <div class="scs">
-            <div class="sc2"><span class="sc2-l">Match</span><span class="sc2-v">${r.matchScore}</span>
+            <div class="sc2"><span class="sc2-l">${this.t('match')}</span><span class="sc2-v">${r.matchScore}</span>
               <div class="sb"><div class="sbf" style="width:${pct}%"></div></div></div>
-            <div class="sc2"><span class="sc2-l">Matched</span><span class="sc2-v">${r.matchCount}/${this.s.sel.size}</span></div>
-            <div class="sc2"><span class="sc2-l">Grade‑3</span><span class="sc2-v">${g3}</span></div>
-            <div class="sc2"><span class="sc2-l">Unique</span><span class="sc2-v">${r.diffScore}%</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('matched')}</span><span class="sc2-v">${r.matchCount}/${this.s.sel.size}</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('grade3')}</span><span class="sc2-v">${g3}</span></div>
+            <div class="sc2"><span class="sc2-l">${this.t('unique')}</span><span class="sc2-v">${r.diffScore}%</span></div>
           </div>
           <div class="ms">${(r.matchedIds || []).slice(0, 8).map(id => {
             const s = S[id];
@@ -254,12 +345,12 @@
             return `<span class="msi ${u ? 'u' : ''}">${esc(s.name)}${star}</span>`;
           }).join('')}</div>
           <div class="ra">
-            <button class="btn bg" data-dt="${r.code}">Details</button>
-            <button class="btn bg" data-cm="${r.code}">${ic("compare","i-sm")} Compare</button>
-            <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} Graph</button>
-            <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} Study</button>
-            <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="Pin to watch while you change symptoms">${this.pins.has(r.code) ? 'Pinned' : 'Pin'}</button>
-            <button class="btn bg" data-strike="${r.code}" title="Strike this remedy out (eliminative method)">Strike</button>
+            <button class="btn bg" data-dt="${r.code}">${this.t('details')}</button>
+            <button class="btn bg" data-cm="${r.code}">${ic("compare","i-sm")} ${this.t('compare')}</button>
+            <button class="btn bg" data-gr="${r.code}">${ic("graph","i-sm")} ${this.t('graph')}</button>
+            <button class="btn bg" data-sr="${r.code}">${ic("study","i-sm")} ${this.t('study')}</button>
+            <button class="btn bg ${this.pins.has(r.code) ? 'on' : ''}" data-pin="${r.code}" aria-pressed="${this.pins.has(r.code)}" title="${this.t('pinTip')}">${this.pins.has(r.code) ? this.t('pinned') : this.t('pin')}</button>
+            <button class="btn bg" data-strike="${r.code}" title="${this.t('strikeTip')}">${this.t('strike')}</button>
             ${this.s.mode === 'teaching' ? `<button class="btn bg" data-ty="${r.code}">Why?</button>` : ''}
           </div></article>`;
       }).join('')}`;
@@ -365,13 +456,23 @@
       ['b-about', 'info', 'About & sources', 'Author, licence, data provenance']
     ];
     $('md').innerHTML = `<div class="mh"><div><div class="mt">Tools</div><div class="msu">Everything outside the finder</div></div><button class="ib" id="mc">✕</button></div>
-      <div class="mbd"><div class="xm">${items.map(([id, e, t, d]) => `
+      <div class="mbd">
+        <div class="langrow"><span>${this.t('language')}</span>
+          <button class="btn bg btn-sm ${this.lang === 'en' ? 'on' : ''}" data-lang="en">English</button>
+          <button class="btn bg btn-sm ${this.lang === 'hi' ? 'on' : ''}" data-lang="hi">हिंदी</button>
+          <button class="btn bg btn-sm ${this.lang === 'gu' ? 'on' : ''}" data-lang="gu">ગુજરાતી</button>
+          <button class="btn bg btn-sm" data-boardcmp="1">${this.t('compareBoards')}</button>
+        </div>
+        <div class="xm">${items.map(([id, e, t, d]) => `
         <button class="btn bg" data-tool="${id}" style="justify-content:flex-start;text-align:left;min-height:68px;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 14px">
           <span style="font-weight:700;display:flex;align-items:center;gap:7px">${ic(e)} ${t}</span><span style="font-size:11.5px;color:var(--ink-2);font-weight:500;white-space:normal;text-align:left">${d}</span>
         </button>`).join('')}</div>
-        <p class="srcl" style="margin-top:14px">Offline · no account · nothing leaves this device</p></div>`;
+        <p class="srcl" style="margin-top:14px">${this.t('offNote')}</p></div>`;
     this.om();
     $('mc').onclick = () => this.cm();
+    document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => { this.cm(); this.setLang(b.dataset.lang); }));
+    const bc = document.querySelector('[data-boardcmp]');
+    if (bc) bc.addEventListener('click', () => this.boardCompare());
     document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
       this.cm();
       const t = $(b.dataset.tool);
@@ -395,6 +496,15 @@
       if (this.s.view === 'results') this.rr();
     }));
     document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => this.view(b.dataset.view)));
+    const bb = $('boards');
+    if (bb) bb.addEventListener('click', e => {
+      const add = e.target.closest('[data-board-add]');
+      if (add) { this.boardAdd(); return; }
+      const c = e.target.closest('[data-board]');
+      if (!c) return;
+      if (e.target.closest('[data-board-del]')) { this.boardDelete(c.dataset.board); return; }
+      this.boardSwitch(c.dataset.board);
+    });
 
     const si = $('search'), sc = $('sc');
     let t = null;
@@ -513,6 +623,57 @@
     window.addEventListener('afterprint', done);
     setTimeout(() => window.print(), 90);
   };
+
+  /* ---------- compare boards ---------- */
+  U.boardCompare = function () {
+    const boards = this.boards.filter(b => (b.sel || []).length);
+    if (boards.length < 2) { this.toast('Add symptoms to two boards first'); return; }
+    const rows = {};
+    boards.forEach((b) => {
+      const res = H.Sc.rank(b.sel, this.s.mode, b.weights || {});
+      res.slice(0, 12).forEach((r, i) => {
+        if (!rows[r.code]) rows[r.code] = { code: r.code, rank: {}, score: {}, hits: 0 };
+        rows[r.code].rank[b.id] = i + 1;
+        rows[r.code].score[b.id] = r.matchScore;
+        rows[r.code].hits++;
+      });
+    });
+    const list = Object.values(rows).sort((a, b) => b.hits - a.hits ||
+      (Object.values(a.rank).reduce((x, y) => x + y, 0) / a.hits) - (Object.values(b.rank).reduce((x, y) => x + y, 0) / b.hits));
+    const m = $('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">${this.t('compareBoards')}</div>
+        <div class="msu">${boards.length} boards · top 12 each · ${this.t(this.s.mode)}</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <div class="mx-wrap"><table class="mx"><thead><tr><th class="sym-col">Remedy</th>
+          ${boards.map(b => `<th>${esc(b.name)}<br><span style="font-weight:500;opacity:.7">${(b.sel || []).length} sx</span></th>`).join('')}
+          <th>In</th></tr></thead><tbody>
+          ${list.slice(0, 30).map(x => {
+            const r = H.DB.remedies[x.code];
+            const cls = x.hits === boards.length ? 'style="background:var(--accent-soft)"' : '';
+            return `<tr ${cls}><td class="sym-cell">${esc(r.name)}<div style="font-size:10.5px;color:var(--ink-3);font-style:italic">${esc(r.latin)}</div></td>
+              ${boards.map(b => `<td>${x.rank[b.id] ? '#' + x.rank[b.id] + ' <span style="font-size:10px;color:var(--ink-3)">' + x.score[b.id] + '</span>' : '—'}</td>`).join('')}
+              <td><strong>${x.hits}</strong>/${boards.length}</td></tr>`;
+          }).join('')}
+        </tbody></table></div>
+        <p class="srcl" style="margin-top:10px">Rows shaded green appear in every board — the remedy that keeps returning across pictures.</p>
+      </div>`;
+    this.om();
+    $('mc').onclick = () => this.cm();
+  };
+
+  /* ---------- boot ---------- */
+  const baseInit = U.init;
+  U.init = async function () {
+    this.lang = H.St.g('lang', 'en');
+    if (!I18N[this.lang]) this.lang = 'en';
+    this.loadBoards();
+    await baseInit.call(this);
+    this.applyLang();
+    this.renderBoards();
+    this.renderBoardBar();
+  };
+
+  U.renderBoardBar = function () { this.renderBoards(); };
 
   /* ---------- theme hook ---------- */
   const baseUt = U.ut;
