@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.16.0';
+  U.appVersion = '14.0.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -119,6 +119,7 @@
         cases: data.stores.cases.map(c => c.id)
       });
       H.St.s('backupHashes', await hashAll(data));
+      syncBackupMeta();
       const counts = `${data.stores.clinic.length} cases · ${data.stores.cases.length} saved repertorisations · ${(data.settings.srs || []).length} study cards`;
       this.toast(`${saved} — verified · ${counts}`);
       this.offlinePanel();
@@ -564,6 +565,12 @@
         <button class="btn bg" id="off-delta" ${this.canDelta() ? '' : 'disabled title="Take a full backup first"'}>Backup changes only</button>
         <button class="btn bg" id="off-restore">Restore from file</button>
         <button class="btn bg" id="off-transfer">Transfer a case…</button>
+        ${('serviceWorker' in navigator && 'Notification' in window) ? `
+        <div class="offgrid" style="margin-top:12px">
+          <div class="offrow"><span>Background reminder (service worker)</span>
+            <b><button class="btn ${this.bgReminderOn() ? 'bp' : 'bg'} btn-sm" id="bg-toggle">${this.bgReminderOn() ? 'On' : 'Off'}</button></b></div>
+          ${this.bgReminderOn() ? '<div class="offrow"><span>Check now</span><b><button class="btn bg btn-sm" id="bg-test">Run</button></b></div>' : ''}
+        </div>` : ''}
         <div class="langrow" style="margin-top:10px"><span>Remind me every</span>
           ${[3, 7, 30, 0].map(d => `<button class="btn bg btn-sm ${this.remindDays() === d ? 'on' : ''}" data-remind="${d}">${d ? d + ' days' : 'off'}</button>`).join('')}
         </div>
@@ -582,6 +589,8 @@
     $('off-backup').onclick = () => this.backup();
     const dl = $('off-delta'); if (dl) dl.onclick = () => this.backupDelta();
     $('off-restore').onclick = () => this.restore();
+    const bgt = $('bg-toggle'); if (bgt) bgt.onclick = () => this.setBgReminder(!this.bgReminderOn());
+    const bgr = $('bg-test'); if (bgr) bgr.onclick = () => this.testBgReminder();
     document.querySelectorAll('[data-remind]').forEach(b => b.addEventListener('click', () => this.setRemindDays(parseInt(b.dataset.remind, 10))));
     const tr = $('off-transfer'); if (tr) tr.onclick = () => { this.cm(); setTimeout(() => this.transferPanel(), 60); };
     $('off-export').onclick = async () => {
@@ -618,6 +627,15 @@
     await baseInit2.call(this);
     try { this.connectionChip(); } catch (e) {}
     setTimeout(() => { try { this.backupReminder(); } catch (e) {} }, 1200);
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', e => {
+          if (e.data && e.data.type === 'backup-reminder') {
+            try { this.backupReminder(); } catch (err) {}
+          }
+        });
+      }
+    } catch (e) {}
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) { try { this.backupReminder(); } catch (e) {} }
     });
@@ -632,7 +650,63 @@
 
   /* ---------- reminder ---------- */
   U.remindDays = function () { const d = H.St.g('remindDays', 7); return d; };
-  U.setRemindDays = function (d) { H.St.s('remindDays', d); this.toast(d ? `Reminder every ${d} days` : 'Reminder off'); this.offlinePanel(); };
+  U.setRemindDays = function (d) { H.St.s('remindDays', d); syncBackupMeta(); this.toast(d ? `Reminder every ${d} days` : 'Reminder off'); this.offlinePanel(); };
+
+  /* the service worker cannot read localStorage — mirror what it needs into IndexedDB */
+  async function syncBackupMeta() {
+    try {
+      await H.IDB.put('settings', {
+        id: 'backupMeta',
+        value: { lastBackup: H.St.g('lastBackup', null), remindDays: H.St.g('remindDays', 7) }
+      });
+    } catch (e) {}
+  }
+  U.syncBackupMeta = syncBackupMeta;
+
+  /* ---------- background reminder ---------- */
+  U.bgSupported = function () {
+    return 'serviceWorker' in navigator && 'periodicSync' in (window.ServiceWorkerRegistration || {}) === false
+      ? 'serviceWorker' in navigator && 'Notification' in window
+      : 'serviceWorker' in navigator && 'Notification' in window;
+  };
+
+  U.bgReminderOn = function () { return !!H.St.g('bgReminder', false); };
+
+  U.setBgReminder = async function (on) {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+      return this.toast('Background reminders need a service worker and notifications');
+    }
+    if (!on) {
+      H.St.s('bgReminder', false);
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg.periodicSync) await reg.periodicSync.unregister('backup-reminder');
+      } catch (e) {}
+      this.toast('Background reminder off');
+      return this.offlinePanel();
+    }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return this.toast('Notification permission refused');
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (!reg.periodicSync) return this.toast('This browser has no periodic background sync');
+      await reg.periodicSync.register('backup-reminder', { minInterval: 12 * 3600 * 1000 });
+      H.St.s('bgReminder', true);
+      await syncBackupMeta();
+      this.toast('Background reminder on — checked about twice a day');
+    } catch (e) {
+      this.toast('Could not register: ' + e.message);
+    }
+    this.offlinePanel();
+  };
+
+  U.testBgReminder = async function () {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.sync) { await reg.sync.register('backup-reminder'); return this.toast('Reminder check queued'); }
+      this.toast('One-off sync is not available here');
+    } catch (e) { this.toast('Could not queue: ' + e.message); }
+  };
 
   U.backupReminder = async function () {
     const host = $('rv');

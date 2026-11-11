@@ -1,5 +1,32 @@
 # Changelog
 
+## 14.0.0 — 2026-11-11
+
+Offline work complete. This release fixes two things that would have quietly broken it
+and adds the last piece of the reminder story.
+
+### Fixed
+- **The service worker cached only eight files.** `offline.js`, `packs.js`, `vault.js`,
+  `qr.js` and `i18n.js` were missing from the install list, so a cold offline start
+  could serve a shell without the very code that makes the app work offline. The cache
+  now lists all thirteen and is bumped to `rf-v14`.
+- **No `settings` object store.** Two features had been writing to a store that did not
+  exist — the remembered backup folder handle and the backup metadata — and failing
+  silently inside `try/catch`. IndexedDB is now schema v4 with `settings`.
+
+### Added
+- **Background backup reminder.** A `periodicsync` handler wakes the service worker,
+  reads the last backup time from IndexedDB (workers cannot see localStorage), and shows
+  a notification with the age of the last backup. Off by default; needs notification
+  permission and a browser with periodic background sync.
+- A one-off "Run" button to trigger the same check through `sync`.
+- The app listens for the worker's message and re-shows the in-app banner.
+
+### Verified
+Service worker install, activate, cache contents (13 assets) and the worker's read path
+were exercised over a local HTTP server in headless Chrome; the full test suite passes on
+both builds (100 lean, 105 full).
+
 ## 13.16.0 — 2026-11-11
 
 Receiving a case, without typing anything.
