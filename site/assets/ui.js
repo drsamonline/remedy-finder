@@ -347,8 +347,14 @@
 
   U.toggleRubric = function (i) {
     if (this.rubSel.has(i)) this.rubSel.delete(i); else this.rubSel.add(i);
+    const keepFocus = document.activeElement && document.activeElement.dataset &&
+      document.activeElement.dataset.rub === String(i);
     this.rs(); this.rt();
     if (this.s.view === 'results') this.rr();
+    if (keepFocus) {
+      const again = document.querySelector(`[data-rub="${i}"]`);
+      if (again) { again.focus({ preventScroll: true }); again.scrollIntoView({ block: 'nearest' }); }
+    }
   };
 
   U.rsRubrics = function () {
@@ -472,6 +478,8 @@
 
   /* ---------- selection tray ---------- */
   U.rt = function () {
+    const live = document.getElementById('pick-live');
+    if (live) live.textContent = `${this.s.sel.size} symptom${this.s.sel.size === 1 ? '' : 's'} selected`;
     if (this.boards && this.boards.length) this.syncBoard();
     const tray = $('tray');
     if (!tray) return;
@@ -830,8 +838,22 @@
       this.rt();
     });
     $('symptoms').addEventListener('keydown', e => {
-      if ((e.key === ' ' || e.key === 'Enter') && (e.target.classList.contains('sc'))) {
-        e.preventDefault(); e.target.click();
+      const row = e.target.closest && e.target.closest('.sc');
+      if (!row) return;
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); return; }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+      const rows = [...document.querySelectorAll('#symptoms .sc')].filter(r => r.offsetParent !== null);
+      const at = rows.indexOf(row);
+      if (at < 0) return;
+      e.preventDefault();
+      let next = at;
+      if (e.key === 'ArrowDown') next = Math.min(rows.length - 1, at + 1);
+      if (e.key === 'ArrowUp') next = Math.max(0, at - 1);
+      if (e.key === 'Home') next = 0;
+      if (e.key === 'End') next = rows.length - 1;
+      if (rows[next] && rows[next] !== row) {
+        rows[next].focus();
+        rows[next].scrollIntoView({ block: 'nearest' });
       }
     });
     $('tray').addEventListener('click', e => {

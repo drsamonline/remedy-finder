@@ -1,5 +1,23 @@
 # Changelog
 
+## 14.3.0 — 2026-11-11
+
+Working without a mouse, and changing a passphrase without losing the vault.
+
+### Added
+- **Keyboard picking.** Arrow up/down move through picker rows, Home/End jump to the
+  ends, Space or Enter toggles. Focus stays on the row you just changed — before this,
+  every toggle re-rendered the list and dropped focus back to the top.
+- **A live region** announces "n symptoms selected" for screen readers.
+- A visible focus ring on picker rows.
+- **Passphrase rotation.** Change the vault passphrase in place: rows are decrypted with
+  the old key, a new salt and key are derived, everything is re-encrypted, and a new
+  recovery key is issued. The old passphrase and old recovery key stop working.
+
+### Verified
+Rotation tested end to end: encrypt → rotate → reload boots locked → old passphrase
+refused → new passphrase opens → record intact and still ciphertext on disk.
+
 ## 14.2.0 — 2026-11-11
 
 Rechecking a follow-up, without reading two screens and remembering.

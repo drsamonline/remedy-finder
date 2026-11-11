@@ -241,6 +241,48 @@
       `Remedy Finder — recovery key\n\n${rk}\n\nKeep this offline. Anyone with it can decrypt your cases.\nCreated ${new Date().toISOString()}\n`, 'text/plain');
   };
 
+  U.vaultRotate = async function () {
+    const old = prompt('Current passphrase');
+    if (!old) return;
+    if (!(await unlockWith(old))) return this.toast('Wrong passphrase');
+    const np = prompt('New passphrase (min 8 characters).\nYour recovery key will be reissued.');
+    if (np === null) return;
+    if (!np || np.length < 8) return this.toast('Passphrase must be at least 8 characters');
+    // decrypt everything with the old key first
+    const plain = {};
+    for (const store of STORES) {
+      const rows = await baseAll(store);
+      plain[store] = [];
+      for (const r of rows) { const d = await decodeRow(r); if (d) plain[store].push(d); }
+    }
+    // new key, new salt, new canary
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const k = await derive(np, salt, 150000);
+    const canary = await seal(k, 'remedy-finder-vault');
+    H.St.s(META, { salt: b64(salt), iterations: 150000, canary, createdAt: Date.now(), version: 1 });
+    key = k;
+    let n = 0;
+    for (const store of STORES) for (const row of plain[store]) { await H.IDB.put(store, row); n++; }
+    const raw = new Uint8Array(await crypto.subtle.exportKey('raw', k));
+    const rk = toB32(raw);
+    const m = $('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">Passphrase changed</div>
+      <div class="msu">${n} record${n === 1 ? '' : 's'} re-encrypted · new recovery key</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <p class="srcl">The previous passphrase and the previous recovery key no longer open this vault. Store this one now.</p>
+        <div class="recovery-key" id="rk">${rk}</div>
+        <div class="xm" style="margin-top:12px">
+          <button class="btn bp" id="rk-copy">Copy recovery key</button>
+          <button class="btn bg" id="rk-file">Save to a text file</button>
+        </div>
+      </div>`;
+    this.om();
+    $('mc').onclick = () => this.cm();
+    $('rk-copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(rk); this.toast('Recovery key copied'); };
+    $('rk-file').onclick = () => H.Ex.dl('remedy-finder-recovery-key.txt',
+      `Remedy Finder — recovery key (reissued)\n\n${rk}\n\nKeep this offline. Anyone with it can decrypt your cases.\nCreated ${new Date().toISOString()}\n`, 'text/plain');
+  };
+
   U.vaultDisable = async function () {
     const pass = prompt('Enter your passphrase to turn encryption off and store records in plain text.');
     if (!pass) return;
@@ -300,6 +342,7 @@
         </div>` : ''}
         <div class="xm" style="margin-top:14px">
           ${on ? `<button class="btn bp" id="v-lock">Lock now</button>
+                  <button class="btn bg" id="v-rotate">Change passphrase</button>
                   <button class="btn bg" id="v-off">Turn encryption off</button>`
                 : `<button class="btn bp" id="v-on">Set a passphrase</button>`}
         </div>
@@ -312,6 +355,7 @@
     document.querySelectorAll('[data-idle]').forEach(b => b.addEventListener('click', () => this.setIdleMinutes(parseInt(b.dataset.idle, 10))));
     const on2 = $('v-on'); if (on2) on2.onclick = () => this.vaultSetup();
     const lk = $('v-lock'); if (lk) lk.onclick = () => { this.cm(); this.vaultLock(); };
+    const rot = $('v-rotate'); if (rot) rot.onclick = () => this.vaultRotate();
     const off = $('v-off'); if (off) off.onclick = () => this.vaultDisable();
   };
 
