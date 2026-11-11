@@ -2,7 +2,7 @@
 'use strict';
 window.H=window.H||{};const H=window.H;
 H.I={t:k=>H.I.s[k]||k,s:{edu:'Highest Matching Remedies',noRes:'No matches. Try adding generals or modalities.',sel:'selected',match:'Match',conf:'Confidence',diff:'Differentiation',rm:'remedies matched',sy:'symptoms',kn:'Keynotes',desc:'Description',men:'Mentals',gen:'Generals',mod:'Modalities',par:'Particulars',cli:'Clinical Uses',rel:'Relationships',comp:'Complements',ant:'Antidotes',fol:'Follows',bet:'Better',wor:'Worse',src:'Sources',back:'← Back',det:'Details',cmp:'Compare',gr:'Graph',why:'Why?',save:'💾 Save',pr:'🖨 Print',clk:'Click a node to view',ro:'Educational ranking only.',rot:'Scores reflect similarity, not indication.',add:'Added to SRS',matrix:'Comparison Matrix',show:'Show answer',ag:'Again',ha:'Hard',go:'Good',ea:'Easy'}};
-H.Src={r:{
+H.Src={r:{RP:{n:'Repertorium Publicum',full:'Vladimir Polony',era:'2008',desc:'Open graded repertory (GPL v3) — the source of every symptom link in this app.'},
 B:{n:'Boericke',full:'William Boericke',era:'1906',desc:'Pocket Manual of Homoeopathic Materia Medica. Concise, clinical, symptom-focused.'},
 C:{n:'Clarke',full:'John Henry Clarke',era:'1900',desc:'A Dictionary of Practical Materia Medica, 3 vols.'},
 K:{n:'Kent',full:'James Tyler Kent',era:'1904',desc:'Lectures on Homoeopathic Materia Medica.'},
@@ -96,7 +96,7 @@ const u=(code,d)=>({code,name:d[0],latin:d[1],group:d[2],acute:!!d[3],constituti
  particulars:d[9]||{},keynotes:d[10]||[],clinicals:d[11]||[],
  relationships:{comp:d[12]?.c||[],antid:d[12]?.a||[],follows:d[12]?.f||[]},
  family:d[13]||'',sources:d[14]||[],description:d[15]||'',
- strong:d[16]||[],weak:d[17]||[],quote:d[18]||'',qsrc:d[19]||''});
+ strong:d[16]||[],weak:d[17]||[],quote:d[18]||'',qsrc:d[19]||'',quote2:d[20]||'',qsrc2:d[21]||''});
 const R={};for(const c in RAW)R[c]=u(c,RAW[c]);
 const families=D.FAMILIES;
 const packs=D.PACKS;

@@ -811,6 +811,21 @@
         if (anchor) mbd.insertBefore(sec, anchor); else mbd.appendChild(sec);
       }
     }
+    if (r.quote2) {
+      const secs = [...mbd.querySelectorAll('.msec')];
+      const qsec = secs.find(s => /Source text/i.test((s.querySelector('h4') || {}).textContent || ''));
+      if (qsec) {
+        const src2 = (H.Src.r[r.qsrc2] || {});
+        const d2 = document.createElement('div');
+        d2.className = 'msec';
+        d2.innerHTML = `<h4>Source text — ${esc(src2.n || 'Materia medica')} ${esc(src2.era || '')}</h4>
+          <blockquote class="quote alt">${esc(r.quote2)}</blockquote>`;
+        qsec.after(d2);
+        const h = qsec.querySelector('h4');
+        const src1 = (H.Src.r[r.qsrc] || {});
+        if (h && src1.n) h.textContent = `Source text — ${src1.n} ${src1.era || ''}`;
+      }
+    }
     const hdr = document.querySelector('#md .mh');
     if (hdr && !hdr.querySelector('[data-print-one]')) {
       const b = document.createElement('button');

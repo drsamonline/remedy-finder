@@ -1,5 +1,28 @@
 # Changelog
 
+## 13.5.0 — 2026-11-11
+
+Breadth and maintenance — the three things that make it a reference tool rather than
+a good teaching tool.
+
+### Added
+- **119 more remedies.** 178 → **297**, each carrying at least 25 repertory-linked
+  symptoms: Carboneum animalis, Antimonium crudum, Kalium arsenicosum, Nux moschata,
+  Kalium sulphuricum, Natrium phosphoricum, Arsenicum iodatum, Chininum arsenicosum,
+  Bufo, Mercurius corrosivus, Argentum, Valeriana, Senega, Squilla, Oleander, Hydrastis,
+  Selenium, Crocus, Lilium tigrinum, Oxalicum acidum and the rest of the repertory's
+  most-referenced remedies the app was missing.
+- **Two sources side by side.** Every monograph now quotes up to two *different* books —
+  Boericke 1906, Allen 1916, Nash 1899, Clarke 1900 or Guernsey 1886 — each labelled
+  with its author and year. 188 remedies have two, 78 have one.
+- **CI that fails on drift.** `verify.yml` syntax-checks every asset, rebuilds the single
+  files, fails if `dist/` differs from `site/`, and asserts the data still parses with no
+  broken symptom references.
+
+### Changed
+- 44,704 symptom links (was 30,412); repertory now 31,667 rubrics against 297 remedies.
+- Lean build 586 KB → 850 KB; full build 2.5 MB → 3.0 MB.
+
 ## 13.4.0 — 2026-11-11
 
 The last item on the backlog: the repertory itself.

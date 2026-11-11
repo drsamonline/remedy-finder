@@ -1,0 +1,51 @@
+name: Verify build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: |
+          node --check site/assets/app.js
+          node --check site/assets/ui.js
+          node --check site/assets/data.js
+          node --check site/assets/i18n.js
+          node --check site/assets/repertory.js
+      - name: Rebuild the single files
+        run: python3 build.py
+      - name: dist must match site
+        run: |
+          if ! git diff --quiet -- dist/; then
+            echo "::error::dist/ is out of date — run 'python3 build.py' and commit the result"
+            git diff --stat -- dist/
+            exit 1
+          fi
+          echo "dist/ is in sync with site/"
+      - name: Data sanity
+        run: |
+          node -e "
+          global.window = {};
+          eval(require('fs').readFileSync('site/assets/data.js','utf8'));
+          const d = window.HRF_DATA;
+          const n = Object.keys(d.RAW).length;
+          if (n < 250) { console.error('too few remedies:', n); process.exit(1); }
+          if (d.SYM.length < 600) { console.error('too few symptoms'); process.exit(1); }
+          let links = 0, bad = 0;
+          for (const [c, r] of Object.entries(d.RAW)) {
+            const ids = [...r[5], ...r[6], ...r[7], ...r[8], ...Object.values(r[9]).flat()];
+            links += ids.length;
+            for (const id of ids) if (!d.SYM.find(s => s[0] === id)) bad++;
+          }
+          console.log('remedies', n, 'symptoms', d.SYM.length, 'links', links, 'broken refs', bad);
+          if (bad) process.exit(1);
+          "

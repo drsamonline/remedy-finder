@@ -252,6 +252,7 @@ mark{background:var(--gold-soft);color:var(--ink);font-weight:600;border-radius:
 .msec li{margin-bottom:2px}
 blockquote.quote{margin:0;padding:9px 12px;border-left:3px solid var(--accent);background:var(--surface-2);
   border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.6;color:var(--ink)}
+blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);color:var(--ink)}
 .kb{font-size:13px;line-height:1.65}
 .wb{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6}
 .srcl{font-size:11.5px;color:var(--ink-2)}
