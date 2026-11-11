@@ -913,6 +913,72 @@
     }
   };
 
+  /* ---------- printable case sheet ---------- */
+  U.printCase = async function (id) {
+    const c = await H.Clinic.get(id);
+    if (!c) return this.toast('Case not found');
+    const host = document.getElementById('pc');
+    if (!host) return;
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    const date = new Date(c.date || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const ids = (c.selectedIds || []).filter(i => H.DB.symptoms[i]);
+    const syms = ids.map(i => H.DB.symptoms[i]);
+    const ranked = ids.length ? H.Sc.rank(ids, c.mode || 'acute', {}) : [];
+    const top = ranked.slice(0, 10);
+    const chapters = {};
+    syms.forEach(s => { chapters[s.cat] = (chapters[s.cat] || 0) + 1; });
+
+    const quoteFor = code => {
+      const r = H.DB.remedies[code];
+      if (!r || !r.quote) return '';
+      const src = (H.Src && H.Src.r && H.Src.r[r.qsrc]) ? H.Src.r[r.qsrc].n : (r.qsrc || 'source');
+      return `<div class="pc-q"><b>${esc(r.name)}</b> — <i>“${esc(String(r.quote).slice(0, 320))}”</i><br><span style="font-size:10px;color:#777">${esc(src)}</span></div>`;
+    };
+
+    host.innerHTML = `
+      <h1>${esc(c.name || 'Untitled case')}</h1>
+      <p class="pc-sub">Case summary · ${esc(date)} · ${esc((c.mode || 'acute'))} repertorisation</p>
+      <div class="pc-grid">
+        ${c.age ? `<div><b>Age</b> ${esc(c.age)}</div>` : ''}
+        ${c.gender ? `<div><b>Sex</b> ${esc(c.gender)}</div>` : ''}
+        ${c.phone ? `<div><b>Phone</b> ${esc(c.phone)}</div>` : ''}
+        ${c.status ? `<div><b>Status</b> ${esc(c.status)}</div>` : ''}
+      </div>
+      ${c.complaint ? `<h2>Complaint</h2><p style="font-size:11.5px;line-height:1.55;margin:0">${esc(c.complaint)}</p>` : ''}
+      ${c.notes ? `<h2>Notes</h2><p style="font-size:11.5px;line-height:1.55;margin:0;white-space:pre-wrap">${esc(c.notes)}</p>` : ''}
+      ${syms.length ? `<h2>Symptoms (${syms.length})</h2>
+        <ol>${syms.map(s => {
+          let n = '';
+          try { const f = H.U.freq(s.id); n = f instanceof Map ? (f.get(s.id) || '') : (typeof f === 'number' ? f : ''); } catch (e) {}
+          return `<li>${esc(s.name)} <span style="color:#777;font-size:10.5px">· ${esc(s.cat)}${n ? ' · ' + n + ' remedies' : ''}${s.rare ? ' · rare' : ''}</span></li>`;
+        }).join('')}</ol>
+        <p style="font-size:10.5px;color:#777;margin:6px 0 0">Chapters: ${Object.entries(chapters).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}</p>` : '<h2>Symptoms</h2><p style="font-size:11.5px;color:#777;margin:0">No symptoms recorded against this case.</p>'}
+      ${top.length ? `<h2>Remedies by similarity (top ${top.length})</h2>
+        <table><thead><tr><th>#</th><th>Remedy</th><th class="n">Score</th><th class="n">Matched</th><th>Family</th></tr></thead>
+        <tbody>${top.map((r, i) => {
+          const rem = H.DB.remedies[r.code] || {};
+          return `<tr><td>${i + 1}</td><td>${esc(rem.name || r.code)}</td><td class="n">${(r.matchScore != null ? r.matchScore : r.score || 0).toFixed(1)}</td><td class="n">${r.matchCount || 0}/${syms.length}</td><td>${esc(rem.family || '')}</td></tr>`;
+        }).join('')}</tbody></table>
+        <p style="font-size:10.5px;color:#777;margin:6px 0 0">Ranking is similarity to the symptoms entered, not a diagnosis or a prescription.</p>` : ''}
+      ${top.slice(0, 3).map(r => quoteFor(r.code)).join('')}
+      <div class="pc-foot">
+        Remedy Finder ${H.U.appVersion || ''} · repertory data edition ${H.U.dataVersion ? H.U.dataVersion() : ''} · generated ${new Date().toLocaleString('en-IN')}<br>
+        Grades from Repertorium Publicum (2008); materia medica quotations from public-domain sources. Educational tool — it ranks similarity and does not diagnose or prescribe.
+      </div>`;
+
+    document.body.classList.add('print-case');
+    const t = document.title;
+    document.title = `${c.name || 'Case'} — Remedy Finder`;
+    const done = () => {
+      document.body.classList.remove('print-case');
+      document.title = t;
+      window.removeEventListener('afterprint', done);
+    };
+    window.addEventListener('afterprint', done);
+    setTimeout(() => window.print(), 120);
+  };
+
   U.printOne = function (code) {
     const r = H.DB.remedies[code];
     if (!r) return;
@@ -1011,6 +1077,14 @@
     baseClinicDetail.call(this, c);
     const mbd = document.querySelector('#md .mbd');
     if (!mbd) return;
+    if (!mbd.querySelector('[data-print-case]')) {
+      const bar = document.createElement('div');
+      bar.className = 'xm';
+      bar.style.marginTop = '10px';
+      bar.innerHTML = `<button class="btn bg btn-sm" data-print-case="${c.id}">Print case sheet</button>`;
+      mbd.appendChild(bar);
+      bar.querySelector('[data-print-case]').onclick = () => this.printCase(c.id);
+    }
     mbd.querySelectorAll('.fu').forEach(el => {
       const when = el.querySelector('.fu-date');
       if (!when) return;

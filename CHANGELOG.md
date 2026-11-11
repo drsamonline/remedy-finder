@@ -1,5 +1,22 @@
 # Changelog
 
+## 14.1.0 — 2026-11-11
+
+The sheet you hand over or file.
+
+### Added
+- **Printable case sheet.** From a saved case: patient header, complaint, notes, the
+  symptoms entered (with chapter, remedy count and the rare flag), the top ten remedies
+  with score and matched count, and a quotation for the top three with its source.
+  The footer carries the app version, the repertory data edition and the disclaimer.
+- Print styling that hides the app shell, uses A4 margins and keeps the sheet to a page.
+
+### Fixed
+- Symptom fields were read as `s.t` / `s.ch`, which do not exist — the sheet printed
+  `[object Map]` and `Chapters: undefined`. They are `name` and `cat`, and the remedy
+  frequency is a Map, not a number.
+- Ranking rows use `matchScore` / `matchCount`, not `score` / `hits`.
+
 ## 14.0.1 — 2026-11-11
 
 Copy that had drifted from the data.
