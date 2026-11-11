@@ -2,6 +2,8 @@
 
 # Remedy Finder
 
+
+![Screenshot](docs/shot.png)
 **An offline homeopathic repertory workbench — not another symptom search box.**
 
 [![Live app](https://img.shields.io/badge/live%20app-drsamonline.github.io%2Fremedy--finder-0f766e?style=flat-square)](https://drsamonline.github.io/remedy-finder/)
