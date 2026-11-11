@@ -34,7 +34,8 @@ import re as _re
 _ver = _re.search(r"U\.appVersion = '([0-9.]+)'", offl)
 _ver = _ver.group(1) if _ver else '0'
 if (site / 'sw.js').exists():
-    _sw = (site / 'sw.js').read_text(encoding='utf-8').replace('__VER__', _ver)
+    _sw = (site / 'sw.js').read_text(encoding='utf-8')
+    _sw = _re.sub(r"const CACHE = 'rf-[^']*';", "const CACHE = 'rf-" + _ver + "';", _sw)
     (site / 'sw.js').write_text(_sw, encoding='utf-8')
 
 html = html.replace('<script src="assets/qr.js"></script>', '<script>\n' + qr + '\n</script>')
