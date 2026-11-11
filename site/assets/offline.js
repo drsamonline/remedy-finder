@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '14.0.0';
+  U.appVersion = '14.0.1';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {

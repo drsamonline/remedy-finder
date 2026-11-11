@@ -1,5 +1,21 @@
 # Changelog
 
+## 14.0.1 — 2026-11-11
+
+Copy that had drifted from the data.
+
+### Fixed
+- The "How to read this" note, the page description and the landing page still said
+  **178 remedies / 30,412 links** from the original 178-remedy build. The dataset is
+  297 remedies and 44,704 graded links, and the copy now says so.
+- The repertory note said 30,343 rubrics; it is 31,667.
+- The landing page's verification row now reads "265 of 297 remedies quoted" — the
+  number actually in the data — instead of "170 / 178".
+
+### Changed
+- The version test now checks the shape of the version string instead of a hardcoded
+  prefix, so a version bump cannot fail the suite for the wrong reason.
+
 ## 14.0.0 — 2026-11-11
 
 Offline work complete. This release fixes two things that would have quietly broken it

@@ -358,7 +358,7 @@
     if (q.length < 3) {
       host.innerHTML = `<div class="emp"><div class="emp-i">${ic('find','i-lg')}</div>
         <div>Type two or three words — <em>fear of death</em>, <em>thirst small</em>, <em>worse consolation</em>.</div>
-        <div class="srcl" style="margin-top:6px">30,343 rubrics from Repertorium Publicum, each carrying at least three of this app's 178 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
+        <div class="srcl" style="margin-top:6px">31,667 rubrics from Repertorium Publicum, each carrying at least three of this app's 297 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
       return;
     }
     const hits = this.searchRubrics(q);

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0f766e"/>
 <meta name="author" content="Dr Sohil Momin"/>
-<meta name="description" content="Offline repertory and materia medica workbench: 178 remedies, 634 symptoms, 30,412 graded links from Repertorium Publicum (2008). Educational use only."/>
+<meta name="description" content="Offline repertory and materia medica workbench: 297 remedies, 634 symptoms, 44,704 graded links from Repertorium Publicum (2008). Educational use only."/>
 <title>Remedy Finder — offline repertory workbench</title>
 
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMwZjc2NmUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwZDk0ODgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjQyIiBmaWxsPSJ1cmwoI2cpIi8+PHBhdGggZD0iTTk2IDQwbDE0IDM0IDM0IDE0LTM0IDE0LTE0IDM0LTE0LTM0LTM0LTE0IDM0LTE0eiIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjEwIiBmaWxsPSIjMGY3NjZlIi8+PC9zdmc+Cg=="/>
@@ -595,7 +595,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v14.0</div>
+          <div class="bsub">Repertory workbench · v14.0.1</div>
         </div>
       </div>
       <label class="casebar">
@@ -643,7 +643,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
 
       <section class="results" id="rv" aria-label="Repertorisation results" aria-live="polite">
         <div class="rh"><div><div class="rt">Start a case</div><div class="rs">Pick the symptoms that are characteristic, not the ones every remedy has</div></div></div>
-        <div class="disc"><strong>How to read this.</strong> The number beside a symptom is how many of the 178 remedies carry it — rare symptoms discriminate most. ★ marks a grade‑3 (characteristic) link in the repertory.</div>
+        <div class="disc"><strong>How to read this.</strong> The number beside a symptom is how many of the 297 remedies carry it — rare symptoms discriminate most. ★ marks a grade‑3 (characteristic) link in the repertory.</div>
         <div class="stats-grid" style="margin-top:14px">
           <div class="stat-card"><div class="stat-num">178</div><div class="stat-label">Remedies</div></div>
           <div class="stat-card"><div class="stat-num">634</div><div class="stat-label">Symptoms</div></div>
@@ -1322,7 +1322,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     if (q.length < 3) {
       host.innerHTML = `<div class="emp"><div class="emp-i">${ic('find','i-lg')}</div>
         <div>Type two or three words — <em>fear of death</em>, <em>thirst small</em>, <em>worse consolation</em>.</div>
-        <div class="srcl" style="margin-top:6px">30,343 rubrics from Repertorium Publicum, each carrying at least three of this app's 178 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
+        <div class="srcl" style="margin-top:6px">31,667 rubrics from Repertorium Publicum, each carrying at least three of this app's 297 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
       return;
     }
     const hits = this.searchRubrics(q);
@@ -2028,7 +2028,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '14.0.0';
+  U.appVersion = '14.0.1';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
