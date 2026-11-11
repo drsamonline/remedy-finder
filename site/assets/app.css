@@ -479,6 +479,15 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .pinbar{display:none}
 }
 
+/* ---------------- case comparison ---------------- */
+.cmp-list{list-style:none;margin:0;padding:0;font-size:12.5px}
+.cmp-list li{padding:5px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.cmp-list li span{color:var(--ink-3);font-size:11px;margin-left:6px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.cmp-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);padding:4px 6px;border-bottom:1px solid var(--line-2)}
+.cmp-table td{padding:5px 6px;border-bottom:1px solid var(--line)}
+.cmp-table td.n,.cmp-table th.n{text-align:right;font-variant-numeric:tabular-nums}
+
 /* ---------------- printable case sheet ---------------- */
 .pc{display:none}
 @media print{

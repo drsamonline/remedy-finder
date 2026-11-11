@@ -8,6 +8,7 @@
   const U = H.U;
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  U.esc = esc;
   const isMobile = () => window.matchMedia('(max-width:820px)').matches;
 
   /* ---------- helpers ---------- */
@@ -913,6 +914,65 @@
     }
   };
 
+  /* ---------- compare two cases ---------- */
+  U.caseDiffPick = async function (id) {
+    const c = await H.Clinic.get(id);
+    if (!c) return this.toast('Case not found');
+    const all = (await H.Clinic.all()).filter(x => x.id !== id);
+    if (!all.length) return this.toast('Only one case on this device');
+    const m = document.getElementById('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">Compare “${this.esc(c.name || 'Untitled')}” with…</div>
+      <div class="msu">Follow-up or a second opinion, side by side</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd"><div class="offgrid">${all.slice(0, 20).map(x =>
+        `<div class="offrow"><span>${this.esc(x.name || 'Untitled')} · ${this.esc((x.complaint || '').slice(0, 30))}</span>
+         <b><button class="btn bg btn-sm" data-cmp="${x.id}">Compare</button></b></div>`).join('')}</div></div>`;
+    this.om();
+    document.getElementById('mc').onclick = () => this.cm();
+    m.querySelectorAll('[data-cmp]').forEach(b => b.addEventListener('click', () => this.caseDiff(id, b.dataset.cmp)));
+  };
+
+  U.caseDiff = async function (aId, bId) {
+    const [a, b] = [await H.Clinic.get(aId), await H.Clinic.get(bId)];
+    if (!a || !b) return this.toast('Case not found');
+    const sa = new Set(a.selectedIds || []), sb = new Set(b.selectedIds || []);
+    const onlyA = [...sa].filter(i => !sb.has(i) && H.DB.symptoms[i]);
+    const onlyB = [...sb].filter(i => !sa.has(i) && H.DB.symptoms[i]);
+    const both = [...sa].filter(i => sb.has(i) && H.DB.symptoms[i]);
+    const rA = H.Sc.rank([...sa], a.mode || 'acute', {}).slice(0, 12);
+    const rB = H.Sc.rank([...sb], b.mode || 'acute', {}).slice(0, 12);
+    const posA = {}, posB = {};
+    rA.forEach((r, i) => posA[r.code] = i + 1);
+    rB.forEach((r, i) => posB[r.code] = i + 1);
+    const codes = [...new Set([...rA.map(r => r.code), ...rB.map(r => r.code)])]
+      .sort((x, y) => (posB[x] || 99) - (posB[y] || 99));
+    const nm = code => (H.DB.remedies[code] || {}).name || code;
+    const m = document.getElementById('md');
+    m.innerHTML = `<div class="mh"><div><div class="mt">Case comparison</div>
+      <div class="msu">${this.esc(a.name || 'A')} → ${this.esc(b.name || 'B')}</div></div><button class="ib" id="mc">✕</button></div>
+      <div class="mbd">
+        <div class="offgrid">
+          <div class="offrow"><span>Symptoms in both</span><b class="good">${both.length}</b></div>
+          <div class="offrow"><span>Only in “${this.esc(a.name || 'A')}”</span><b>${onlyA.length}</b></div>
+          <div class="offrow"><span>Only in “${this.esc(b.name || 'B')}”</span><b>${onlyB.length}</b></div>
+        </div>
+        ${onlyB.length ? `<div class="msec" style="margin-top:14px"><h4>Added since</h4><ul class="cmp-list">${onlyB.map(i => `<li>+ ${this.esc(H.DB.symptoms[i].name)} <span>${this.esc(H.DB.symptoms[i].cat)}</span></li>`).join('')}</ul></div>` : ''}
+        ${onlyA.length ? `<div class="msec" style="margin-top:14px"><h4>No longer present</h4><ul class="cmp-list">${onlyA.map(i => `<li>− ${this.esc(H.DB.symptoms[i].name)} <span>${this.esc(H.DB.symptoms[i].cat)}</span></li>`).join('')}</ul></div>` : ''}
+        <div class="msec" style="margin-top:14px"><h4>Remedy movement (top 12)</h4>
+          <table class="cmp-table"><thead><tr><th>Remedy</th><th class="n">${this.esc(a.name || 'A')}</th><th class="n">${this.esc(b.name || 'B')}</th><th class="n">Move</th></tr></thead>
+          <tbody>${codes.map(code => {
+            const pa = posA[code] || null, pb = posB[code] || null;
+            const move = (pa && pb) ? (pa - pb) : null;
+            const cls = move === null ? '' : (move > 0 ? 'good' : (move < 0 ? 'bad' : ''));
+            const txt = move === null ? (pa ? 'dropped out' : 'new') : (move === 0 ? '—' : (move > 0 ? '↑' + move : '↓' + (-move)));
+            return `<tr><td>${this.esc(nm(code))}</td><td class="n">${pa || '—'}</td><td class="n">${pb || '—'}</td><td class="n ${cls}">${txt}</td></tr>`;
+          }).join('')}</tbody></table>
+          <p class="srcl" style="margin-top:8px">Positions are ranks within the top 12 of each repertorisation. Movement is not evidence of improvement — it reflects the symptoms recorded.</p>
+        </div>
+      </div>`;
+    this.om();
+    document.getElementById('mc').onclick = () => this.cm();
+  };
+
   /* ---------- printable case sheet ---------- */
   U.printCase = async function (id) {
     const c = await H.Clinic.get(id);
@@ -1081,9 +1141,11 @@
       const bar = document.createElement('div');
       bar.className = 'xm';
       bar.style.marginTop = '10px';
-      bar.innerHTML = `<button class="btn bg btn-sm" data-print-case="${c.id}">Print case sheet</button>`;
+      bar.innerHTML = `<button class="btn bg btn-sm" data-print-case="${c.id}">Print case sheet</button>
+        <button class="btn bg btn-sm" data-compare-case="${c.id}">Compare with…</button>`;
       mbd.appendChild(bar);
       bar.querySelector('[data-print-case]').onclick = () => this.printCase(c.id);
+      bar.querySelector('[data-compare-case]').onclick = () => this.caseDiffPick(c.id);
     }
     mbd.querySelectorAll('.fu').forEach(el => {
       const when = el.querySelector('.fu-date');

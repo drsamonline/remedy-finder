@@ -1,5 +1,19 @@
 # Changelog
 
+## 14.2.0 — 2026-11-11
+
+Rechecking a follow-up, without reading two screens and remembering.
+
+### Added
+- **Case comparison.** From a case: *Compare with…*, pick another case, and see symptoms
+  in both, added since, no longer present, and a movement table for the top twelve
+  remedies — rank in each, and ↑/↓/new/dropped out.
+- The panel says plainly that movement reflects the symptoms recorded, not improvement.
+
+### Fixed
+- `this.esc` was used by the new panel but never existed on `U`; the module's escape
+  helper is now exposed as `U.esc` for any method that needs it.
+
 ## 14.1.0 — 2026-11-11
 
 The sheet you hand over or file.
