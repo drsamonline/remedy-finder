@@ -1,5 +1,26 @@
 # Changelog
 
+## 14.8.1 — 2026-11-11
+
+The reason the last few releases looked like they never arrived.
+
+### Fixed — the service worker pinned the old app forever
+- **The cache name was never bumped.** It was `rf-v14` from v14.0.0 and stayed
+  `rf-v14` through v14.1–v14.8, while the fetch handler was cache-first for
+  *everything* — including `index.html`. Anyone who had visited once kept getting the
+  v14.0 shell and v14.0 assets, no matter what shipped.
+- The cache is now stamped with the build version at build time (`rf-14.8.1`), so every
+  release installs a new cache and deletes the old one.
+- **Documents are network-first** now: a deploy is visible on the next load, and the
+  cache is only the offline fallback. Assets use stale-while-revalidate.
+- **Auto-update**: when a new worker installs, the page shows "Update ready — reloading"
+  and reloads once. `updateViaCache: 'none'` so the worker script itself is never served
+  from cache.
+
+### Verified
+Served over local HTTP: cache created as `rf-14.8.0`; after editing `index.html` on the
+server, a reload showed the new document immediately.
+
 ## 14.8.0 — 2026-11-11
 
 The explorer was built for a desktop and dropped onto a phone.

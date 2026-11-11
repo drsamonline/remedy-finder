@@ -29,6 +29,14 @@ html = html.replace('<script src="assets/ui.js"></script>', '<script>\n' + ui + 
 html = html.replace('<script src="assets/offline.js"></script>', '<script>\n' + offl + '\n</script>')
 html = html.replace('<script src="assets/packs.js"></script>', '<script>\n' + packs + '\n</script>')
 html = html.replace('<script src="assets/vault.js"></script>', '<script>\n' + vault + '\n</script>')
+# stamp the service worker with this build's version so the cache name always changes
+import re as _re
+_ver = _re.search(r"U\.appVersion = '([0-9.]+)'", offl)
+_ver = _ver.group(1) if _ver else '0'
+if (site / 'sw.js').exists():
+    _sw = (site / 'sw.js').read_text(encoding='utf-8').replace('__VER__', _ver)
+    (site / 'sw.js').write_text(_sw, encoding='utf-8')
+
 html = html.replace('<script src="assets/qr.js"></script>', '<script>\n' + qr + '\n</script>')
 # no service worker in the single-file build
 html = re.sub(r"<script>\s*if \('serviceWorker' in navigator.*?</script>", '', html, flags=re.S)

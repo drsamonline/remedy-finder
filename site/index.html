@@ -52,7 +52,7 @@
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v14.8</div>
+          <div class="bsub">Repertory workbench · v14.8.1</div>
         </div>
       </div>
       <label class="casebar">
@@ -180,7 +180,26 @@
 <script src="assets/qr.js"></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    // a new worker means new code — tell the user, and reload once it takes over
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          try { H.U.toast('Update ready — reloading'); } catch (e) {}
+          setTimeout(() => location.reload(), 900);
+        }
+      });
+    });
+  }).catch(() => {});
+  // if the controller changes under us, the app on screen is stale
+  let refreshed = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshed) return;
+    refreshed = true;
+    location.reload();
+  });
 }
 </script>
 </body>

@@ -1,6 +1,6 @@
 /* Remedy Finder — offline cache + background backup reminder.
    Bump CACHE whenever an asset changes. */
-const CACHE = 'rf-v14';
+const CACHE = 'rf-14.8.0';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './assets/app.css', './assets/app.js', './assets/data.js', './assets/ui.js',
@@ -24,12 +24,29 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+
+  // Documents: network first, so a new deploy is seen immediately; cache is the fallback.
+  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match('./index.html').then(hit => hit || caches.match('./')))
+    );
+    return;
+  }
+
+  // Everything else: cache first, refresh in the background (stale-while-revalidate).
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() => caches.match('./index.html')))
+    caches.match(e.request).then(hit => {
+      const net = fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        return res;
+      }).catch(() => null);
+      return hit || net.then(r => r || caches.match('./index.html'));
+    })
   );
 });
 
