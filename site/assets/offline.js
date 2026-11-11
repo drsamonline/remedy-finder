@@ -18,7 +18,7 @@
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '13.13.0';
+  U.appVersion = '13.14.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {
@@ -331,6 +331,18 @@
     return JSON.parse(DEC.decode(pt));
   };
 
+  U.transferMany = async function (ids) {
+    const cases = [];
+    for (const id of ids) { const c = await H.Clinic.get(id); if (c) cases.push(c); }
+    if (!cases.length) return this.toast('No cases selected');
+    const pin = prompt(`Choose a PIN for ${cases.length} case${cases.length > 1 ? 's' : ''} (4+ characters).`);
+    if (!pin || pin.length < 4) return this.toast('PIN must be at least 4 characters');
+    const code = await this.makeCode({ kind: 'cases', v: 1, dataVersion: this.dataVersion(), cases }, pin);
+    $('tf-out').value = code;
+    $('tf-out').select();
+    this.toast(`${cases.length} case${cases.length > 1 ? 's' : ''} in one code — ${code.length} characters`);
+  };
+
   U.transferPanel = async function () {
     const cases = await H.Clinic.all();
     const m = $('md');
@@ -338,13 +350,17 @@
       <div class="msu">Device to device · no network, no account</div></div><button class="ib" id="mc">✕</button></div>
       <div class="mbd">
         <p class="srcl">Pick a case, choose a PIN, and copy the code to the other device — or type it in there. Nothing is uploaded; the code is the only thing that moves.</p>
-        ${cases.length ? `<div class="offgrid" style="margin-top:10px">${cases.slice(0, 12).map(c =>
-          `<div class="offrow"><span>${esc(c.name || 'Untitled')} · ${esc((c.complaint || '').slice(0, 28))}</span>
-           <b><button class="btn bg btn-sm" data-mk="${esc(c.id)}">Make code</button></b></div>`).join('')}</div>`
+        ${cases.length ? `<div class="offgrid" style="margin-top:10px">${cases.slice(0, 20).map(c =>
+          `<div class="offrow"><span><label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+             <input type="checkbox" class="tf-pick" value="${esc(c.id)}" style="width:16px;height:16px;accent-color:var(--accent)"/>
+             ${esc(c.name || 'Untitled')} · ${esc((c.complaint || '').slice(0, 26))}</label></span>
+           <b><button class="btn bg btn-sm" data-mk="${esc(c.id)}">One</button></b></div>`).join('')}</div>
+           <div class="xm" style="margin-top:8px"><button class="btn bp btn-sm" id="tf-many">Make code for selected</button></div>`
           : '<p class="srcl">No cases on this device yet.</p>'}
         <div class="msec" style="margin-top:16px"><h4>Code to show</h4>
           <textarea id="tf-out" rows="3" readonly placeholder="A code appears here after you tap “Make code”."></textarea>
-          <div class="xm" style="margin-top:8px"><button class="btn bg btn-sm" id="tf-copy">Copy</button></div>
+          <div class="xm" style="margin-top:8px"><button class="btn bg btn-sm" id="tf-copy">Copy</button>
+            <button class="btn bg btn-sm" id="tf-save">Save as file</button></div>
         </div>
         <div class="msec" style="margin-top:14px"><h4>Receive a code</h4>
           <textarea id="tf-in" rows="3" placeholder="Paste a transfer code"></textarea>
@@ -364,9 +380,16 @@
       $('tf-out').select();
       this.toast(`Code ready — ${code.length} characters, PIN ${pin.length} characters`);
     }));
+    const many = $('tf-many');
+    if (many) many.onclick = () => this.transferMany([...document.querySelectorAll('.tf-pick:checked')].map(i => i.value));
     $('tf-copy').onclick = () => {
       const t = $('tf-out'); if (!t.value) return this.toast('Nothing to copy yet');
       t.select(); navigator.clipboard && navigator.clipboard.writeText(t.value); this.toast('Code copied');
+    };
+    const save = $('tf-save');
+    if (save) save.onclick = () => {
+      const t = $('tf-out'); if (!t.value) return this.toast('Nothing to save yet');
+      H.Ex.dl(`remedy-finder-transfer-${new Date().toISOString().slice(0, 10)}.rfc.txt`, t.value, 'text/plain');
     };
     $('tf-read').onclick = async () => {
       const raw = $('tf-in').value.trim();
@@ -376,12 +399,11 @@
       let obj;
       try { obj = await this.readCode(raw, pin); }
       catch (e) { return this.toast('Could not read the code — wrong PIN or damaged text'); }
-      if (!obj || obj.kind !== 'case' || !obj.case) return this.toast('That is not a case code');
-      const c = obj.case;
-      if (!confirm(`Add “${c.name || 'Untitled'}” to this device?\n\nScored with data ${obj.dataVersion || 'unknown'}.`)) return;
-      c.id = undefined;
-      await H.Clinic.save(c);
-      this.toast('Case received');
+      const list = obj.kind === 'cases' ? (obj.cases || []) : (obj.kind === 'case' && obj.case ? [obj.case] : null);
+      if (!list) return this.toast('That is not a case code');
+      if (!confirm(`Add ${list.length} case${list.length > 1 ? 's' : ''} to this device?\n\nScored with data ${obj.dataVersion || 'unknown'}.`)) return;
+      for (const c of list) { c.id = undefined; await H.Clinic.save(c); }
+      this.toast(`${list.length} case${list.length > 1 ? 's' : ''} received`);
       this.cm();
     };
   };
@@ -462,12 +484,15 @@
         ${row('Last backup', lastTxt + (days !== null && days > 7 ? ' ⚠' : ''), last ? days <= 7 : false)}
         ${row('New records since backup', delta === null ? '—' : delta, delta === null ? null : delta === 0)}
       </div>
-      ${days !== null && days > 7 ? `<div class="backup-note">Last backup was ${days} days ago. A backup is the only copy that survives clearing site data.</div>` : ''}
+      ${days !== null && days > this.remindDays() ? `<div class="backup-note">Last backup was ${days} days ago. A backup is the only copy that survives clearing site data.</div>` : ''}
       <div class="xm" style="margin-top:14px">
         <button class="btn bp" id="off-backup">Backup now (encrypted)</button>
         <button class="btn bg" id="off-delta" ${this.canDelta() ? '' : 'disabled title="Take a full backup first"'}>Backup changes only</button>
         <button class="btn bg" id="off-restore">Restore from file</button>
         <button class="btn bg" id="off-transfer">Transfer a case…</button>
+        <div class="langrow" style="margin-top:10px"><span>Remind me every</span>
+          ${[3, 7, 30, 0].map(d => `<button class="btn bg btn-sm ${this.remindDays() === d ? 'on' : ''}" data-remind="${d}">${d ? d + ' days' : 'off'}</button>`).join('')}
+        </div>
         <button class="btn bg" id="off-precache" ${location.protocol === 'file:' ? 'disabled title="Only needed for the web app"' : ''}>Download everything for offline</button>
         <button class="btn bg" id="off-export">Plain JSON (no passphrase)</button>
       </div>
@@ -483,6 +508,7 @@
     $('off-backup').onclick = () => this.backup();
     const dl = $('off-delta'); if (dl) dl.onclick = () => this.backupDelta();
     $('off-restore').onclick = () => this.restore();
+    document.querySelectorAll('[data-remind]').forEach(b => b.addEventListener('click', () => this.setRemindDays(parseInt(b.dataset.remind, 10))));
     const tr = $('off-transfer'); if (tr) tr.onclick = () => { this.cm(); setTimeout(() => this.transferPanel(), 60); };
     $('off-export').onclick = async () => {
       const data = await collect();
@@ -518,6 +544,9 @@
     await baseInit2.call(this);
     try { this.connectionChip(); } catch (e) {}
     setTimeout(() => { try { this.backupReminder(); } catch (e) {} }, 1200);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) { try { this.backupReminder(); } catch (e) {} }
+    });
   };
 
   const baseSave = H.C.save;
@@ -528,6 +557,9 @@
   };
 
   /* ---------- reminder ---------- */
+  U.remindDays = function () { const d = H.St.g('remindDays', 7); return d; };
+  U.setRemindDays = function (d) { H.St.s('remindDays', d); this.toast(d ? `Reminder every ${d} days` : 'Reminder off'); this.offlinePanel(); };
+
   U.backupReminder = async function () {
     const host = $('rv');
     if (!host || host.querySelector('.reminder')) return;
@@ -537,8 +569,10 @@
     const sc = await storeCounts();
     const total = sc.clinic + sc.cases + sc.srs;
     if (!total) return;
+    const limit = this.remindDays();
+    if (!limit) return;
     const days = last ? Math.floor((Date.now() - last) / 864e5) : null;
-    if (days !== null && days <= 7) return;
+    if (days !== null && days <= limit) return;
     const el = document.createElement('div');
     el.className = 'reminder';
     el.innerHTML = `<span>${days === null ? 'No backup yet' : 'Last backup ' + days + ' days ago'} · ${total} record${total > 1 ? 's' : ''} on this device only.</span>

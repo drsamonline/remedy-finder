@@ -1,5 +1,17 @@
 # Changelog
 
+## 13.14.0 — 2026-11-11
+
+Transfer in batches, and a reminder you set yourself.
+
+### Added
+- **Batch transfer.** Tick several cases and one code carries them all — 2 cases is
+  about 730 characters, still pasteable. Receiving handles one or many in the same path.
+- **Save a code as a file** (`.rfc.txt`) for sending through any messenger, if pasting a
+  700-character string is not convenient.
+- **Reminder interval.** 3 / 7 / 30 days, or off. The banner also re-checks when you
+  return to the tab, not only at startup.
+
 ## 13.13.0 — 2026-11-11
 
 Moving one case between your own devices, without a server.
