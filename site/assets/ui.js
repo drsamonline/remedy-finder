@@ -357,6 +357,9 @@
     }
   };
 
+  U.rareOnly = function () { return H.St.g('rareOnly', false); };
+  U.setRareOnly = function (on) { H.St.s('rareOnly', !!on); this.rs(); };
+
   U.rsRubrics = function () {
     const host = $('symptoms');
     if (!host) return;
@@ -368,10 +371,16 @@
         <div class="srcl" style="margin-top:6px">39,737 rubrics from Repertorium Publicum, each carrying at least two of this app's 297 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
       return;
     }
-    const hits = this.searchRubrics(q);
+    let hits = this.searchRubrics(q);
     if (!hits.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No rubric matches “${esc(q)}”.</div></div>`; return; }
+    const rare = this.rareOnly();
+    if (rare) hits = hits.filter(i => this.rubIndex[i].n <= 3);
     hits.sort((a, b) => this.rubIndex[b].n - this.rubIndex[a].n);
-    host.innerHTML = `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Rubrics</span>
+    const bar = `<div class="rubbar">
+      <span class="rubcount">${hits.length} rubric${hits.length === 1 ? '' : 's'}${rare ? ' · 3 remedies or fewer' : ''}</span>
+      <button class="btn bg btn-sm ${rare ? 'on' : ''}" id="rub-rare" aria-pressed="${rare}">${rare ? 'Rare only ✓' : 'Rare only'}</button>
+    </div>`;
+    host.innerHTML = bar + (hits.length ? `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Rubrics</span>
         <span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
       <div class="sl">${hits.map(i => {
         const r = this.rubIndex[i];
@@ -379,7 +388,9 @@
         return `<div class="sc rb-row ${on ? 'sel' : ''}" data-rub="${i}" role="checkbox" aria-checked="${on}" tabindex="0">
           <input type="checkbox" ${on ? 'checked' : ''} tabindex="-1" aria-hidden="true">
           <span>${esc(r.p)}</span><span class="n">${r.n}</span></div>`;
-      }).join('')}</div></div>`;
+      }).join('')}</div></div>` : `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No rubric with three remedies or fewer matches “${esc(q)}”.</div><div class="srcl">Turn “Rare only” off to see all matches.</div></div>`);
+    const rb = $('rub-rare');
+    if (rb) rb.onclick = () => this.setRareOnly(!rare);
   };
 
   /* ---------- combined ranking (symptoms + rubrics) ---------- */

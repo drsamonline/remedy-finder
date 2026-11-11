@@ -491,6 +491,11 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .pinbar{display:none}
 }
 
+/* ---------------- rubric filter ---------------- */
+.rubbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rubcount{font-size:11.5px;color:var(--ink-3);flex:1}
+.btn.on{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+
 /* ---------------- a11y ---------------- */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .sc:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:8px}
@@ -631,7 +636,7 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
         <div class="mark" aria-hidden="true">✦</div>
         <div>
           <div class="btitle">Remedy Finder</div>
-          <div class="bsub">Repertory workbench · v14.4</div>
+          <div class="bsub">Repertory workbench · v14.5</div>
         </div>
       </div>
       <label class="casebar">
@@ -1359,6 +1364,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
     }
   };
 
+  U.rareOnly = function () { return H.St.g('rareOnly', false); };
+  U.setRareOnly = function (on) { H.St.s('rareOnly', !!on); this.rs(); };
+
   U.rsRubrics = function () {
     const host = $('symptoms');
     if (!host) return;
@@ -1370,10 +1378,16 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         <div class="srcl" style="margin-top:6px">39,737 rubrics from Repertorium Publicum, each carrying at least two of this app's 297 remedies. A rubric scores as chapter weight × rarity × grade.</div></div>`;
       return;
     }
-    const hits = this.searchRubrics(q);
+    let hits = this.searchRubrics(q);
     if (!hits.length) { host.innerHTML = `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No rubric matches “${esc(q)}”.</div></div>`; return; }
+    const rare = this.rareOnly();
+    if (rare) hits = hits.filter(i => this.rubIndex[i].n <= 3);
     hits.sort((a, b) => this.rubIndex[b].n - this.rubIndex[a].n);
-    host.innerHTML = `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Rubrics</span>
+    const bar = `<div class="rubbar">
+      <span class="rubcount">${hits.length} rubric${hits.length === 1 ? '' : 's'}${rare ? ' · 3 remedies or fewer' : ''}</span>
+      <button class="btn bg btn-sm ${rare ? 'on' : ''}" id="rub-rare" aria-pressed="${rare}">${rare ? 'Rare only ✓' : 'Rare only'}</button>
+    </div>`;
+    host.innerHTML = bar + (hits.length ? `<div class="ss open"><button class="sh" aria-expanded="true" type="button"><span>Rubrics</span>
         <span class="ct">${hits.length}</span><span class="ch" aria-hidden="true">▸</span></button>
       <div class="sl">${hits.map(i => {
         const r = this.rubIndex[i];
@@ -1381,7 +1395,9 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
         return `<div class="sc rb-row ${on ? 'sel' : ''}" data-rub="${i}" role="checkbox" aria-checked="${on}" tabindex="0">
           <input type="checkbox" ${on ? 'checked' : ''} tabindex="-1" aria-hidden="true">
           <span>${esc(r.p)}</span><span class="n">${r.n}</span></div>`;
-      }).join('')}</div></div>`;
+      }).join('')}</div></div>` : `<div class="emp"><div class="emp-i">${ic('info','i-lg')}</div><div>No rubric with three remedies or fewer matches “${esc(q)}”.</div><div class="srcl">Turn “Rare only” off to see all matches.</div></div>`);
+    const rb = $('rub-rare');
+    if (rb) rb.onclick = () => this.setRareOnly(!rare);
   };
 
   /* ---------- combined ranking (symptoms + rubrics) ---------- */
@@ -2224,7 +2240,7 @@ document.addEventListener('DOMContentLoaded',()=>{H.U.init().catch(err=>{console
   U.dataVersion = function () {
     return `rp2008-${H.DB.remedyCount}r-${H.DB.links}l`;
   };
-  U.appVersion = '14.4.0';
+  U.appVersion = '14.5.0';
 
   /* ---------- crypto ---------- */
   async function keyFrom(pass, salt, usage) {

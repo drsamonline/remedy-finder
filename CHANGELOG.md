@@ -1,5 +1,19 @@
 # Changelog
 
+## 14.5.0 — 2026-11-11
+
+The sharp end of the repertory, one tap away.
+
+### Added
+- **Rare-only filter** in Repertory mode: keeps rubrics carried by three remedies or
+  fewer. Searching *fever* returns 150 rubrics, 23 of them with three remedies or fewer
+  — the ones that actually discriminate. The choice persists.
+- Counts next to the toggle say what is being shown.
+
+### Measured
+With 39,737 rubrics the repertory loads in 0.7 s, the index builds in 323 ms, and a
+search runs in 1–4 ms. No caching needed.
+
 ## 14.4.0 — 2026-11-11
 
 The repertory was thinner than it needed to be.

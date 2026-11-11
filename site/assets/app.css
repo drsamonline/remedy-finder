@@ -479,6 +479,11 @@ blockquote.quote.alt{border-left-color:var(--gold);background:var(--gold-soft);c
   .pinbar{display:none}
 }
 
+/* ---------------- rubric filter ---------------- */
+.rubbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rubcount{font-size:11.5px;color:var(--ink-3);flex:1}
+.btn.on{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+
 /* ---------------- a11y ---------------- */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .sc:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:8px}

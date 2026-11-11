@@ -38,6 +38,7 @@ Most remedy finders are a search box over a list. A repertory is not a list — 
 | **Pin & watch** | Pin up to three remedies and change the symptoms around them; the pinned strip keeps showing each remedy’s live rank and score |
 | **Data packs** | Import a JSON pack to add remedies offline (validated against this app's symptom IDs, with a SHA-256 checksum so a tampered file is refused), or export the current data as a pack. Packs persist in IndexedDB and re-apply on load |
 | **Text search** | A third picker mode searches the materia medica itself — descriptions, both quoted sources and clinical uses — plus the repertory rubric paths, with highlighted snippets and one click to the monograph |
+| **Rare-only filter** | One toggle in Repertory mode keeps rubrics carried by three remedies or fewer — the characteristic material, not the fever rubric every remedy has |
 | **Full repertory** | A second picker mode: search **39,737 rubrics** from Repertorium Publicum by words — *fear of death*, *thirst small*, *worse consolation* — and repertorise directly on rubrics, alone or mixed with curated symptoms |
 | **Boards** | Keep several rubric sets inside one case — acute picture, constitutional picture, family history — switch between them, and compare their rankings side by side |
 | **Interface languages** | English, हिंदी and ગુજરાતી for the finder, results and tools. Repertory terms stay in English — they are the vocabulary of the source books |
